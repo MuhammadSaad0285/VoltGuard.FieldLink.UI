@@ -1,0 +1,236 @@
+﻿<div class="test-result-detail-page">
+  <div class="detail-header-row">
+    <app-page-header
+      title="Test Result Detail"
+      subtitle="View the calculated outcome, asset risk, measurements, and report">
+    </app-page-header>
+
+    <div class="header-actions">
+      <a routerLink="/test-results" class="secondary-action">Back</a>
+
+      <button
+        type="button"
+        class="primary-action"
+        (click)="downloadReport()"
+        [disabled]="!testResult || reportLoading">
+        {{ reportLoading ? 'Downloading...' : 'Report' }}
+      </button>
+
+      <a
+        *ngIf="canManageJobs && testResult && shouldShowFollowUpAction(testResult)"
+        routerLink="/jobs/new"
+        [queryParams]="{
+          assetId: testResult.assetId,
+          testResultId: testResult.id || testResult.testResultId,
+          title: getFollowUpTitle(testResult),
+          priority: getFollowUpPriority(testResult)
+        }"
+        class="primary-action">
+        Create Follow-up Job
+      </a>
+
+      <button
+        *ngIf="canDelete"
+        type="button"
+        class="danger-action"
+        (click)="deleteTestResult()"
+        [disabled]="!testResult || actionLoading">
+        {{ actionLoading ? 'Deleting...' : 'Delete' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="message message--success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <div class="message message--error" *ngIf="errorMessage">
+    <span>{{ errorMessage }}</span>
+    <button type="button" (click)="loadTestResult()">Try again</button>
+  </div>
+
+  <div class="loading-card" *ngIf="loading">
+    Loading test result detail...
+  </div>
+
+  <ng-container *ngIf="testResult as result">
+    <section class="summary-grid">
+      <article class="summary-card">
+        <span>Reference</span>
+        <strong>{{ getTestReference(result) }}</strong>
+      </article>
+
+      <article class="summary-card">
+        <span>Status</span>
+        <strong>
+          <span [class]="getStatusClass(getStatus(result))">
+            {{ getStatus(result) }}
+          </span>
+        </strong>
+      </article>
+
+      <article class="summary-card">
+        <span>Risk</span>
+        <strong>
+          <span [class]="getRiskClass(getRiskLevel(result))">
+            {{ getRiskLevel(result) }}
+          </span>
+        </strong>
+      </article>
+
+      <article class="summary-card">
+        <span>Test date</span>
+        <strong>{{ getTestDate(result) }}</strong>
+      </article>
+    </section>
+
+    <section class="detail-grid">
+      <article class="detail-card">
+        <header>
+          <h3>Test Information</h3>
+        </header>
+
+        <dl>
+          <div>
+            <dt>Test type</dt>
+            <dd>{{ getTestType(result) }}</dd>
+          </div>
+
+          <div>
+            <dt>Engineer</dt>
+            <dd>{{ getEngineerName(result) }}</dd>
+          </div>
+
+          <div>
+            <dt>Created</dt>
+            <dd>{{ getCreatedDate(result) }}</dd>
+          </div>
+
+          <div>
+            <dt>Updated</dt>
+            <dd>{{ getUpdatedDate(result) }}</dd>
+          </div>
+
+          <div>
+            <dt>Next due</dt>
+            <dd>{{ getNextDueDate(result) }}</dd>
+          </div>
+        </dl>
+      </article>
+
+      <article class="detail-card">
+        <header>
+          <h3>Asset Information</h3>
+        </header>
+
+        <dl>
+          <div>
+            <dt>Asset</dt>
+            <dd>{{ getAssetName(result) }}</dd>
+          </div>
+
+          <div>
+            <dt>Asset tag</dt>
+            <dd>{{ getAssetTag(result) }}</dd>
+          </div>
+
+          <div>
+            <dt>Asset type</dt>
+            <dd>{{ getAssetType(result) }}</dd>
+          </div>
+
+          <div>
+            <dt>Customer</dt>
+            <dd>{{ getCustomerName(result) }}</dd>
+          </div>
+
+          <div>
+            <dt>Site</dt>
+            <dd>{{ getSiteName(result) }}</dd>
+          </div>
+
+          <div>
+            <dt>Location</dt>
+            <dd>{{ getLocation(result) }}</dd>
+          </div>
+
+          <div>
+            <dt>Manufacturer / model</dt>
+            <dd>{{ getManufacturerModel(result) }}</dd>
+          </div>
+        </dl>
+      </article>
+    </section>
+
+    <section class="detail-card notes-card">
+      <header>
+        <h3>Notes</h3>
+      </header>
+
+      <div class="notes-content">
+        <p>{{ getNotes(result) }}</p>
+      </div>
+    </section>
+
+    <section class="detail-card">
+      <header class="measurements-header">
+        <div>
+          <h3>Measurements</h3>
+          <p>{{ getMeasurements(result).length }} measurement{{ getMeasurements(result).length === 1 ? '' : 's' }}</p>
+        </div>
+      </header>
+
+      <div class="table-wrap" *ngIf="getMeasurements(result).length > 0; else noMeasurements">
+        <table>
+          <thead>
+            <tr>
+              <th>Measurement</th>
+              <th>Value</th>
+              <th>Threshold</th>
+              <th>Status</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let measurement of getMeasurements(result); trackBy: trackByMeasurement">
+              <td>
+                <strong>{{ getMeasurementName(measurement) }}</strong>
+              </td>
+
+              <td>{{ getMeasurementValue(measurement) }}</td>
+
+              <td>{{ getThreshold(measurement) }}</td>
+
+              <td>
+                <span [class]="getStatusClass(getStatus(measurement))">
+                  {{ getStatus(measurement) }}
+                </span>
+              </td>
+
+              <td>{{ getMeasurementNotes(measurement) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #noMeasurements>
+        <div class="empty-measurements">
+          No measurements are attached to this test result.
+        </div>
+      </ng-template>
+    </section>
+  </ng-container>
+
+  <app-confirm-dialog
+    *ngIf="showDeleteDialog && testResult"
+    title="Delete test result"
+    [message]="'Delete test result &quot;' + getTestReference(testResult) + '&quot;? This cannot be undone.'"
+    confirmText="Delete"
+    busyText="Deleting..."
+    [busy]="actionLoading"
+    [danger]="true"
+    (confirm)="confirmDelete()"
+    (cancel)="cancelDelete()">
+  </app-confirm-dialog>
+</div>

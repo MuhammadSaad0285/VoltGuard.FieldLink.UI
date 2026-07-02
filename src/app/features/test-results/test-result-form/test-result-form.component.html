@@ -1,0 +1,364 @@
+﻿<div class="test-result-form-page">
+  <app-page-header
+    [title]="isEditMode ? 'Edit Test Result' : 'New Manual Test Result'"
+    subtitle="Select the tested asset and enter manual measurements. Final status and risk are calculated by the backend.">
+  </app-page-header>
+
+  <form class="form-card" [formGroup]="form" autocomplete="off" (ngSubmit)="save()">
+    <div class="alert alert-danger" *ngIf="errorMessage">
+      {{ errorMessage }}
+    </div>
+
+    <div class="alert alert-success" *ngIf="successMessage">
+      {{ successMessage }}
+    </div>
+
+    <section class="section-card">
+      <div class="section-heading">
+        <div>
+          <h3>Asset selection</h3>
+          <p>Filter by customer/site if needed, then select the asset being tested.</p>
+        </div>
+
+        <button type="button" class="link-button" (click)="clearAssetFilters()" [disabled]="saving || loadingDetails">
+          Clear filters
+        </button>
+      </div>
+
+      <div class="filter-grid">
+        <label class="form-field">
+          <span>Customer filter</span>
+          <select
+            [value]="selectedCustomerId"
+            (change)="onCustomerFilterChange($any($event.target).value)"
+            [disabled]="saving || loadingCustomers || loadingDetails">
+            <option value="">All customers</option>
+            <option *ngFor="let customer of customers; trackBy: trackByCustomer" [value]="customer.id">
+              {{ getCustomerName(customer) }}
+            </option>
+          </select>
+          <small *ngIf="loadingCustomers">Loading customers...</small>
+        </label>
+
+        <label class="form-field">
+          <span>Site filter</span>
+          <select
+            [value]="selectedSiteId"
+            (change)="onSiteFilterChange($any($event.target).value)"
+            [disabled]="saving || loadingSites || loadingDetails || !selectedCustomerId">
+            <option value="">All sites</option>
+            <option *ngFor="let site of sites; trackBy: trackBySite" [value]="site.id">
+              {{ getSiteName(site) }}
+            </option>
+          </select>
+          <small *ngIf="loadingSites">Loading sites...</small>
+        </label>
+
+        <label class="form-field form-field--wide">
+          <span>Asset <em>*</em></span>
+          <select formControlName="assetId" [disabled]="saving || loadingAssets || loadingDetails">
+            <option value="">{{ loadingAssets ? 'Loading assets...' : 'Select asset' }}</option>
+            <option *ngFor="let asset of assets; trackBy: trackByAsset" [value]="asset.id">
+              {{ getAssetLabel(asset) }}
+            </option>
+          </select>
+          <small class="field-error" *ngIf="isControlInvalid('assetId')">
+            Asset is required.
+          </small>
+        </label>
+      </div>
+
+      <div class="selected-asset" *ngIf="selectedAsset as asset">
+        <strong>{{ getAssetLabel(asset) }}</strong>
+        <span>{{ getAssetMeta(asset) }}</span>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <div class="section-heading">
+        <div>
+          <h3>Test details</h3>
+          <p>These values describe the manual test event. Status and risk are intentionally not editable.</p>
+        </div>
+
+        <button
+          type="button"
+          class="ai-action"
+          (click)="generateAiNotes()"
+          [disabled]="saving || loadingDetails || generatingAiNotes">
+          {{ generatingAiNotes ? 'Generating...' : 'Generate AI Notes' }}
+        </button>
+      </div>
+
+      <div class="details-grid">
+        <label class="form-field">
+          <span>Test reference</span>
+          <input type="text" formControlName="testReference" placeholder="Example: TR-2026-0007" [disabled]="saving || loadingDetails" />
+        </label>
+
+        <label class="form-field">
+          <span>Test type <em>*</em></span>
+          <select formControlName="testType" [disabled]="saving || loadingDetails">
+            <option value="">Select test type</option>
+            <option *ngFor="let testType of getTestTypeOptions(); trackBy: trackByOption" [value]="testType">
+              {{ testType }}
+            </option>
+          </select>
+          <small class="field-error" *ngIf="isControlInvalid('testType')">
+            Test type is required.
+          </small>
+        </label>
+
+        <label class="form-field">
+          <span>Test date/time <em>*</em></span>
+          <input type="datetime-local" formControlName="testDateUtc" [disabled]="saving || loadingDetails" />
+          <small class="field-error" *ngIf="isControlInvalid('testDateUtc')">
+            Test date/time is required.
+          </small>
+        </label>
+
+        <label class="form-field">
+          <span>Engineer name <em>*</em></span>
+          <select formControlName="engineerName" [disabled]="saving || loadingDetails || loadingEngineers">
+            <option value="">{{ loadingEngineers ? 'Loading engineers...' : 'Select engineer' }}</option>
+            <option *ngFor="let engineerName of getEngineerNameOptions(); trackBy: trackByOption" [value]="engineerName">
+              {{ getEngineerDropdownLabel(engineerName) }}
+            </option>
+          </select>
+          <small class="field-error" *ngIf="isControlInvalid('engineerName')">
+            Engineer name is required.
+          </small>
+        </label>
+
+        <label class="form-field form-field--full">
+          <span>Notes</span>
+          <textarea rows="3" formControlName="notes" placeholder="Optional notes for this test result" [disabled]="saving || loadingDetails"></textarea>
+        </label>
+
+        <div class="ai-draft-panel" *ngIf="aiDraftOpen">
+          <div class="ai-draft-header">
+            <div>
+              <strong>AI draft note</strong>
+              <p>Review and edit the suggestion, then accept it into Notes.</p>
+            </div>
+
+            <span class="confidence-pill" *ngIf="aiDraftConfidence !== null">
+              {{ formatConfidence(aiDraftConfidence) }}
+            </span>
+          </div>
+
+          <div class="ai-loading" *ngIf="generatingAiNotes">
+            <span>Analyzing test details and measurements</span>
+            <span class="ai-loading-dots" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </span>
+          </div>
+
+          <ng-container *ngIf="!generatingAiNotes">
+            <div class="ai-warning-list" *ngIf="aiDraftWarnings.length">
+              <strong>Missing details</strong>
+              <ul>
+                <li *ngFor="let warning of aiDraftWarnings">{{ warning }}</li>
+              </ul>
+            </div>
+
+            <label class="form-field">
+              <span>{{ aiDraftTyping ? 'Draft note is typing...' : 'Draft note' }}</span>
+              <textarea
+                rows="5"
+                [value]="aiDraftNotes"
+                (input)="onAiDraftInput($any($event.target).value)"
+                placeholder="AI draft will appear here"></textarea>
+            </label>
+
+            <div class="ai-draft-actions">
+              <button
+                type="button"
+                class="primary-action"
+                (click)="acceptAiDraft(true)"
+                [disabled]="aiDraftTyping || !aiDraftNotes.trim()">
+                {{ hasExistingNotes() ? 'Replace Notes' : 'Accept Note' }}
+              </button>
+
+              <button
+                type="button"
+                class="secondary-action"
+                *ngIf="hasExistingNotes()"
+                (click)="acceptAiDraft(false)"
+                [disabled]="aiDraftTyping || !aiDraftNotes.trim()">
+                Append to Notes
+              </button>
+
+              <button type="button" class="link-button" (click)="discardAiDraft()">
+                Discard
+              </button>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <div class="section-heading section-heading--measurements">
+        <div>
+          <h3>Measurements</h3>
+          <p>Add one row per reading. Row status is not selected here; the backend evaluates each row.</p>
+        </div>
+
+        <div class="section-actions">
+          <button type="button" class="secondary-action" (click)="addCommonMeasurementRows()" [disabled]="saving || loadingDetails">
+            Add common rows
+          </button>
+
+          <button type="button" class="primary-action" (click)="addMeasurement()" [disabled]="saving || loadingDetails">
+            Add measurement
+          </button>
+        </div>
+      </div>
+
+      <div class="measurements-table" formArrayName="measurements">
+        <table>
+          <thead>
+            <tr>
+              <th>Measurement <em>*</em></th>
+              <th>Value <em>*</em></th>
+              <th>Unit <em>*</em></th>
+              <th>Expected min</th>
+              <th>Expected max</th>
+              <th>Notes</th>
+              <th class="actions-column">Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr
+              *ngFor="let measurement of measurements.controls; let i = index; trackBy: trackByMeasurement"
+              [formGroupName]="i">
+              <td>
+                <input
+                  #measurementInput
+                  type="text"
+                  formControlName="measurementName"
+                  list="measurement-name-options"
+                  autocomplete="off"
+                  [attr.data-measurement-index]="i"
+                  data-measurement-control="measurementName"
+                  placeholder="Insulation Resistance"
+                  [disabled]="saving || loadingDetails" />
+                <small class="field-error" *ngIf="isMeasurementControlInvalid(i, 'measurementName')">
+                  Required
+                </small>
+              </td>
+
+              <td>
+                <input
+                  #measurementInput
+                  type="number"
+                  step="any"
+                  formControlName="value"
+                  autocomplete="off"
+                  [attr.data-measurement-index]="i"
+                  data-measurement-control="value"
+                  placeholder="Reading"
+                  [disabled]="saving || loadingDetails" />
+                <small class="field-error" *ngIf="getMeasurementValueError(i) as valueError">
+                  {{ valueError }}
+                </small>
+              </td>
+
+              <td>
+                <input
+                  #measurementInput
+                  type="text"
+                  formControlName="unit"
+                  list="measurement-unit-options"
+                  autocomplete="off"
+                  [attr.data-measurement-index]="i"
+                  data-measurement-control="unit"
+                  placeholder="MΩ"
+                  [disabled]="saving || loadingDetails" />
+                <small class="field-error" *ngIf="isMeasurementControlInvalid(i, 'unit')">
+                  Required
+                </small>
+              </td>
+
+              <td>
+                <input
+                  #measurementInput
+                  type="number"
+                  step="any"
+                  formControlName="expectedMin"
+                  autocomplete="off"
+                  [attr.data-measurement-index]="i"
+                  data-measurement-control="expectedMin"
+                  placeholder="Optional"
+                  [class.invalid]="hasMeasurementThresholdError(i) || getMeasurementThresholdControlError(i, 'expectedMin')"
+                  [disabled]="saving || loadingDetails" />
+                <small class="field-error" *ngIf="getMeasurementThresholdControlError(i, 'expectedMin') as thresholdError">
+                  {{ thresholdError }}
+                </small>
+              </td>
+
+              <td>
+                <input
+                  #measurementInput
+                  type="number"
+                  step="any"
+                  formControlName="expectedMax"
+                  autocomplete="off"
+                  [attr.data-measurement-index]="i"
+                  data-measurement-control="expectedMax"
+                  placeholder="Optional"
+                  [class.invalid]="hasMeasurementThresholdError(i) || getMeasurementThresholdControlError(i, 'expectedMax')"
+                  [disabled]="saving || loadingDetails" />
+                <small class="field-error" *ngIf="getMeasurementThresholdControlError(i, 'expectedMax') as thresholdError">
+                  {{ thresholdError }}
+                </small>
+                <small class="field-error" *ngIf="hasMeasurementThresholdError(i)">
+                  Min cannot be greater than max.
+                </small>
+              </td>
+
+              <td>
+                <input
+                  #measurementInput
+                  type="text"
+                  formControlName="notes"
+                  autocomplete="off"
+                  [attr.data-measurement-index]="i"
+                  data-measurement-control="notes"
+                  placeholder="Optional"
+                  [disabled]="saving || loadingDetails" />
+              </td>
+
+              <td class="actions-column">
+                <button type="button" class="danger-action" (click)="removeMeasurement(i)" [disabled]="saving || loadingDetails">
+                  Remove
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <datalist id="measurement-name-options">
+          <option *ngFor="let name of commonMeasurementNames" [value]="name"></option>
+        </datalist>
+
+        <datalist id="measurement-unit-options">
+          <option *ngFor="let unit of commonUnits" [value]="unit"></option>
+        </datalist>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <a routerLink="/test-results" class="secondary-action">Cancel</a>
+
+      <button type="submit" class="save-action" [disabled]="saving || loadingDetails">
+        {{ saving ? 'Saving...' : isEditMode ? 'Update Test Result' : 'Create Test Result' }}
+      </button>
+    </div>
+  </form>
+</div>
+

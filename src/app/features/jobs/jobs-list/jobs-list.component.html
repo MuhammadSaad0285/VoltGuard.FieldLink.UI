@@ -1,0 +1,291 @@
+<div class="jobs-page">
+  <div class="jobs-header-row">
+    <app-page-header
+      title="Jobs / Work Orders"
+      subtitle="Plan, track, and close operational work linked to assets">
+    </app-page-header>
+
+    <a *ngIf="canCreate" routerLink="/jobs/new" class="primary-action">
+      New Job
+    </a>
+  </div>
+
+  <section class="toolbar-card">
+    <form class="search-form" (ngSubmit)="applySearch()">
+      <label class="search-label" for="jobSearch">Search jobs</label>
+
+      <div class="search-row">
+        <input
+          id="jobSearch"
+          name="jobSearch"
+          type="search"
+          [(ngModel)]="searchTerm"
+          placeholder="Search by title, asset, assignee, notes..."
+          autocomplete="off" />
+
+        <select
+          name="selectedCustomerId"
+          [ngModel]="selectedCustomerId"
+          (ngModelChange)="filterByCustomer($event)"
+          [disabled]="customersLoading">
+          <option value="">All customers</option>
+          <option *ngFor="let customer of customers; trackBy: trackByCustomer" [value]="customer.id">
+            {{ getCustomerDropdownLabel(customer) }}
+          </option>
+        </select>
+
+        <select
+          name="selectedSiteId"
+          [ngModel]="selectedSiteId"
+          (ngModelChange)="filterBySite($event)"
+          [disabled]="!selectedCustomerId || sitesLoading">
+          <option value="">All sites</option>
+          <option *ngFor="let site of sites; trackBy: trackBySite" [value]="site.id">
+            {{ getSiteDropdownLabel(site) }}
+          </option>
+        </select>
+
+        <select
+          name="selectedAssetId"
+          [(ngModel)]="selectedAssetId"
+          (ngModelChange)="applyFilter()"
+          [disabled]="assetsLoading">
+          <option value="">All assets</option>
+          <option *ngFor="let asset of assets; trackBy: trackByAsset" [value]="asset.id">
+            {{ getAssetDropdownLabel(asset) }}
+          </option>
+        </select>
+
+        <select name="selectedStatus" [(ngModel)]="selectedStatus" (ngModelChange)="applyFilter()">
+          <option value="">All statuses</option>
+          <option *ngFor="let status of statuses" [value]="status">{{ status }}</option>
+        </select>
+
+        <select name="selectedPriority" [(ngModel)]="selectedPriority" (ngModelChange)="applyFilter()">
+          <option value="">All priorities</option>
+          <option *ngFor="let priority of priorities" [value]="priority">{{ priority }}</option>
+        </select>
+
+        <select name="selectedJobType" [(ngModel)]="selectedJobType" (ngModelChange)="applyFilter()">
+          <option value="">All job types</option>
+          <option *ngFor="let type of jobTypes" [value]="type">{{ type }}</option>
+        </select>
+
+        <button type="submit" [disabled]="loading">
+          Search
+        </button>
+
+        <button type="button" class="secondary-button" (click)="clearFilters()" [disabled]="loading">
+          Clear
+        </button>
+      </div>
+
+      <label class="checkbox-filter">
+        <input
+          type="checkbox"
+          name="overdueOnly"
+          [(ngModel)]="overdueOnly"
+          (ngModelChange)="applyFilter()" />
+        Overdue only
+      </label>
+    </form>
+
+    <div class="page-size-box">
+      <label for="pageSize">Rows</label>
+      <select
+        id="pageSize"
+        [ngModel]="pageSize"
+        (ngModelChange)="changePageSize($event)"
+        name="pageSize">
+        <option *ngFor="let option of pageSizeOptions" [ngValue]="option">
+          {{ option }}
+        </option>
+      </select>
+    </div>
+  </section>
+
+  <div class="message message--success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <div class="message message--error" *ngIf="errorMessage">
+    <span>{{ errorMessage }}</span>
+    <button type="button" (click)="loadJobs()">Try again</button>
+  </div>
+
+  <div class="loading-card" *ngIf="loading && jobs.length === 0">
+    Loading jobs...
+  </div>
+
+  <section class="jobs-card" *ngIf="jobs.length > 0; else emptyJobs">
+    <div class="table-summary">
+        Showing page {{ pageNumber }} of {{ totalPages }} · {{ totalCount }} job{{ totalCount === 1 ? '' : 's' }}
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Job</th>
+            <th>Asset</th>
+            <th>Customer / Site</th>
+            <th>Type</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Assigned To</th>
+            <th>Due Date</th>
+            <th>Days Overdue</th>
+            <th class="actions-heading">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let job of jobs; trackBy: trackByJob">
+            <td>
+              <div class="main-text">{{ getTitle(job) }}</div>
+              <div class="muted-text">{{ job.description || job.notes || 'No description' }}</div>
+            </td>
+
+            <td>
+              <div class="main-text">{{ getAssetName(job) }}</div>
+              <div class="muted-text">{{ getAssetTag(job) }}</div>
+            </td>
+
+            <td>
+              <div class="main-text">{{ getCustomerName(job) }}</div>
+              <div class="muted-text">{{ getSiteName(job) }}</div>
+            </td>
+
+            <td>{{ getJobType(job) }}</td>
+
+            <td>
+              <span [class]="getPriorityClass(getPriority(job))">
+                {{ getPriority(job) }}
+              </span>
+            </td>
+
+            <td>
+              <span [class]="getStatusClass(getStatus(job))">
+                {{ getStatus(job) }}
+              </span>
+            </td>
+
+            <td>{{ getAssignedTo(job) }}</td>
+
+            <td>{{ getDueDate(job) }}</td>
+
+            <td>
+              <span [class]="getOverdueClass(job)">
+                {{ getDaysOverdue(job) }}
+              </span>
+            </td>
+
+            <td class="actions-cell">
+              <div
+                class="action-menu"
+                [class.action-menu--open]="openActionMenuId === job.id"
+                (click)="keepActionMenuOpen($event)">
+                <button
+                  type="button"
+                  class="action-menu-trigger"
+                  [attr.aria-expanded]="openActionMenuId === job.id"
+                  [attr.title]="hasAvailableActions(job) ? 'Open actions' : 'No actions available'"
+                  [disabled]="!hasAvailableActions(job)"
+                  (click)="toggleActionMenu(job, $event)">
+                  Actions
+                </button>
+
+                <div class="action-menu-panel" *ngIf="openActionMenuId === job.id && hasAvailableActions(job)">
+                  <a
+                    *ngIf="canEditJob(job)"
+                    [routerLink]="['/jobs', job.id, 'edit']"
+                    class="action-menu-item"
+                    (click)="closeActionMenu()">
+                    Edit
+                  </a>
+
+                  <button
+                    *ngIf="canStart(job)"
+                    type="button"
+                    class="action-menu-item"
+                    (click)="startJob(job)"
+                    [disabled]="actionLoadingKey === 'start:' + job.id">
+                    {{ actionLoadingKey === 'start:' + job.id ? 'Starting...' : 'Start' }}
+                  </button>
+
+                  <button
+                    *ngIf="canComplete(job)"
+                    type="button"
+                    class="action-menu-item"
+                    (click)="completeJob(job)"
+                    [disabled]="actionLoadingKey === 'complete:' + job.id">
+                    {{ actionLoadingKey === 'complete:' + job.id ? 'Completing...' : 'Complete' }}
+                  </button>
+
+                  <button
+                    *ngIf="canCancel(job)"
+                    type="button"
+                    class="action-menu-item action-menu-item--danger"
+                    (click)="cancelJob(job)"
+                    [disabled]="actionLoadingKey === 'cancel:' + job.id">
+                    {{ actionLoadingKey === 'cancel:' + job.id ? 'Cancelling...' : 'Cancel' }}
+                  </button>
+
+                  <button
+                    *ngIf="canDelete"
+                    type="button"
+                    class="action-menu-item action-menu-item--danger"
+                    (click)="deleteJob(job)"
+                    [disabled]="actionLoadingKey === 'delete:' + job.id">
+                    {{ actionLoadingKey === 'delete:' + job.id ? 'Deleting...' : 'Delete' }}
+                  </button>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-row">
+      <button
+        type="button"
+        class="page-button"
+        (click)="goToPage(pageNumber - 1)"
+        [disabled]="loading || !hasPreviousPage">
+        Previous
+      </button>
+
+      <div class="page-list">
+        <button
+          type="button"
+          class="page-number"
+          *ngFor="let page of getVisiblePages()"
+          [class.page-number--active]="page === pageNumber"
+          (click)="goToPage(page)"
+          [disabled]="loading">
+          {{ page }}
+        </button>
+      </div>
+
+      <button
+        type="button"
+        class="page-button"
+        (click)="goToPage(pageNumber + 1)"
+        [disabled]="loading || !hasNextPage">
+        Next
+      </button>
+    </div>
+  </section>
+
+  <ng-template #emptyJobs>
+    <div class="empty-state" *ngIf="!loading">
+      <h2>No jobs found</h2>
+      <p>Create a job to schedule inspection, repair, retest, or follow-up work against an asset.</p>
+
+      <a *ngIf="canCreate" routerLink="/jobs/new" class="primary-action">
+        Create Job
+      </a>
+    </div>
+  </ng-template>
+</div>

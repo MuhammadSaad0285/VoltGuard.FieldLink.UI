@@ -1,0 +1,83 @@
+﻿<section class="asset-history-card">
+  <div class="asset-history-card__header">
+    <div>
+      <h2>Test History</h2>
+      <p>Previous test results recorded against this asset.</p>
+    </div>
+  </div>
+
+  <div class="message message--success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <div class="message message--error" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+
+  <div class="loading-card" *ngIf="loading">
+    Loading test history...
+  </div>
+
+  <div class="table-wrap" *ngIf="!loading && history.length > 0; else noHistory">
+    <table>
+      <thead>
+        <tr>
+          <th>Reference</th>
+          <th>Test Type</th>
+          <th>Date</th>
+          <th>Engineer</th>
+          <th>Status</th>
+          <th>Risk</th>
+          <th class="actions-column">Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let test of history; trackBy: trackByTest">
+          <td>
+            <strong>{{ getTestReference(test) }}</strong>
+          </td>
+
+          <td>{{ test.testType || 'Not set' }}</td>
+          <td>{{ getTestDate(test) }}</td>
+          <td>{{ test.engineerName || 'Not set' }}</td>
+
+          <td>
+            <span [class]="getStatusClass(getStatus(test))">
+              {{ getStatus(test) }}
+            </span>
+          </td>
+
+          <td>
+            <span [class]="getRiskClass(getRiskLevel(test))">
+              {{ getRiskLevel(test) }}
+            </span>
+          </td>
+
+          <td class="actions-cell">
+            <a
+              class="table-action"
+              [routerLink]="['/test-results', getTestResultId(test)]"
+              [class.disabled]="!getTestResultId(test)">
+              View
+            </a>
+
+            <button
+              type="button"
+              class="table-action"
+              (click)="downloadReport(test)"
+              [disabled]="!getTestResultId(test) || reportLoadingId === getTestResultId(test)">
+              {{ reportLoadingId === getTestResultId(test) ? 'Downloading...' : 'PDF Report' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <ng-template #noHistory>
+    <div class="empty-state" *ngIf="!loading">
+      No test history yet.
+    </div>
+  </ng-template>
+</section>

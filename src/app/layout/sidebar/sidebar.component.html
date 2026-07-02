@@ -1,0 +1,49 @@
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-mark">VG</div>
+    <div>
+      <strong>VoltGuard</strong>
+      <small>FieldLink</small>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <span class="nav-dot"></span>
+      Dashboard
+    </a>
+    <a *ngIf="canView" routerLink="/customers" routerLinkActive="active">
+      <span class="nav-dot"></span>
+      Customers
+    </a>
+    <a *ngIf="canView" routerLink="/sites" routerLinkActive="active">
+      <span class="nav-dot"></span>
+      Sites
+    </a>
+    <a *ngIf="canView" routerLink="/assets" routerLinkActive="active">
+      <span class="nav-dot"></span>
+      Assets
+    </a>
+    <a *ngIf="canView" routerLink="/jobs" routerLinkActive="active">
+      <span class="nav-dot"></span>
+      Jobs / Work Orders
+    </a>
+    <a *ngIf="canView" routerLink="/test-results" routerLinkActive="active">
+      <span class="nav-dot"></span>
+      Test Results
+    </a>
+    <a
+      *ngIf="canViewAdmin"
+      routerLink="/admin"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }">
+      <span class="nav-dot"></span>
+      Admin
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <span>Secure workspace</span>
+    <strong>VoltGuard Admin</strong>
+  </div>
+</aside>

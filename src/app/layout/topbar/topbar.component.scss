@@ -1,0 +1,136 @@
+.topbar {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.topbar-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-mark {
+  align-items: center;
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 62%, #2563eb 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+  color: #ffffff;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 900;
+  height: 36px;
+  justify-content: center;
+  letter-spacing: 0.4px;
+  position: relative;
+  width: 36px;
+}
+
+.brand-copy {
+  display: grid;
+  gap: 1px;
+}
+
+.topbar-title strong {
+  color: #0f172a;
+  font-size: 18px;
+}
+
+.topbar-title span {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.user-area {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.user-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.user-avatar {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #e0ecff;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.user-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  text-align: right;
+}
+
+.user-copy strong {
+  max-width: 220px;
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-copy span {
+  max-width: 220px;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logout-button {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  line-height: 1;
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.logout-button:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+@media (max-width: 720px) {
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 18px;
+  }
+
+  .user-area {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .user-copy {
+    text-align: left;
+  }
+}

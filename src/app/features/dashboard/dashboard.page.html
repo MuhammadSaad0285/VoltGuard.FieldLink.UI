@@ -1,0 +1,349 @@
+﻿<div class="dashboard-page">
+  <div class="dashboard-header-row">
+    <app-page-header
+      title="Dashboard"
+      subtitle="Live operational summary from VoltGuard FieldLink">
+    </app-page-header>
+
+    <!-- <button
+      type="button"
+      class="refresh-button"
+      (click)="loadSummary()"
+      [disabled]="loading">
+      {{ loading ? 'Refreshing...' : 'Refresh' }}
+    </button> -->
+  </div>
+
+  <div class="dashboard-loading" *ngIf="loading && !summary">
+    Loading dashboard summary...
+  </div>
+
+  <div class="dashboard-error" *ngIf="errorMessage">
+    <span>{{ errorMessage }}</span>
+    <button type="button" (click)="loadSummary()">Try again</button>
+  </div>
+
+  <ng-container *ngIf="summary as data">
+    <section class="summary-grid" aria-label="Dashboard summary cards">
+      <article
+        class="summary-card"
+        *ngFor="let card of cards; trackBy: trackByCardTitle"
+        [class.summary-card--success]="card.tone === 'success'">
+        <div class="summary-card__topline">{{ card.accent }}</div>
+        <div class="summary-card__body">
+          <div>
+            <div class="summary-card__label">{{ card.title }}</div>
+            <div class="summary-card__helper">{{ card.helper }}</div>
+          </div>
+          <div class="summary-card__value">{{ card.value }}</div>
+        </div>
+      </article>
+    </section>
+
+    <section class="insight-grid" aria-label="Dashboard insight panels">
+      <article class="insight-panel">
+        <div class="insight-panel__header">
+          <div>
+            <h2>Compliance Health</h2>
+            <p>Pass, warning, and fail distribution.</p>
+          </div>
+          <span class="panel-total">{{ getDistributionTotal(getComplianceSegments(data)) }} tests</span>
+        </div>
+
+        <div class="distribution-list">
+          <div
+            class="distribution-row"
+            *ngFor="let segment of getComplianceSegments(data); trackBy: trackBySegment">
+            <div class="distribution-row__meta">
+              <span class="legend-dot" [class]="'legend-dot legend-dot--' + segment.tone"></span>
+              <span>{{ segment.label }}</span>
+              <strong>{{ segment.value }}</strong>
+            </div>
+            <div class="progress-track" aria-hidden="true">
+              <div
+                class="progress-fill"
+                [class]="'progress-fill progress-fill--' + segment.tone"
+                [style.width.%]="segment.percent">
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="insight-panel">
+        <div class="insight-panel__header">
+          <div>
+            <h2>Asset Risk</h2>
+            <p>Risk profile across tracked assets.</p>
+          </div>
+          <span class="panel-total">{{ data.totalAssets }} assets</span>
+        </div>
+
+        <div class="distribution-list">
+          <div
+            class="distribution-row"
+            *ngFor="let segment of getAssetRiskSegments(data); trackBy: trackBySegment">
+            <div class="distribution-row__meta">
+              <span class="legend-dot" [class]="'legend-dot legend-dot--' + segment.tone"></span>
+              <span>{{ segment.label }}</span>
+              <strong>{{ segment.value }}</strong>
+            </div>
+            <div class="progress-track" aria-hidden="true">
+              <div
+                class="progress-fill"
+                [class]="'progress-fill progress-fill--' + segment.tone"
+                [style.width.%]="segment.percent">
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="insight-panel">
+        <div class="insight-panel__header">
+          <div>
+            <h2>Action Needed</h2>
+            <p>Operational items that need attention.</p>
+          </div>
+          <a routerLink="/jobs" class="panel-link">View all</a>
+        </div>
+
+        <div class="action-grid">
+          <div
+            class="action-metric"
+            *ngFor="let metric of getActionMetrics(data); trackBy: trackByActionMetric"
+            [class.action-metric--danger]="metric.tone === 'danger'"
+            [class.action-metric--warning]="metric.tone === 'warning'">
+            <span>{{ metric.label }}</span>
+            <strong>{{ metric.value }}</strong>
+            <small>{{ metric.helper }}</small>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="dashboard-panels">
+      <article class="dashboard-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Recent Failed Tests</h2>
+            <p>Latest failed test results that need review.</p>
+          </div>
+
+          <a routerLink="/test-results" class="panel-link">View all</a>
+        </div>
+
+        <div class="table-wrap" *ngIf="getVisibleFailedTests(data).length > 0; else noFailedTests">
+          <table>
+            <thead>
+              <tr>
+                <th>Reference</th>
+                <th>Asset</th>
+                <th>Site</th>
+                <th>Test Type</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Risk</th>
+                <th class="actions-column">Report</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let test of getVisibleFailedTests(data); trackBy: trackByFailedTest">
+                <td class="strong-cell">{{ getTestReference(test) }}</td>
+                <td>
+                  <div class="main-text">{{ test.assetName || 'Unknown asset' }}</div>
+                  <div class="muted-text">{{ test.assetTag || 'No tag' }}</div>
+                </td>
+                <td>
+                  <div class="main-text">{{ test.siteName || 'Unknown site' }}</div>
+                  <div class="muted-text">{{ test.customerName || 'Unknown customer' }}</div>
+                </td>
+                <td>{{ test.testType || 'Not set' }}</td>
+                <td>{{ getTestDate(test) }}</td>
+                <td>
+                  <span [class]="getBadgeClass(getTestStatus(test))">
+                    {{ getTestStatus(test) }}
+                  </span>
+                </td>
+                <td>
+                  <span [class]="getBadgeClass(getRiskLevel(test))">
+                    {{ getRiskLevel(test) }}
+                  </span>
+                </td>
+
+                <td class="actions-cell">
+                  <a
+                    class="table-action-button"
+                    [routerLink]="['/test-results', getTestResultId(test)]"
+                    [class.disabled]="!getTestResultId(test)">
+                    View
+                  </a>
+                  <button
+                    type="button"
+                    class="table-action-button"
+                    (click)="downloadReport(test)"
+                    [disabled]="!getTestResultId(test) || reportLoadingId === getTestResultId(test)">
+                    {{ reportLoadingId === getTestResultId(test) ? 'Downloading...' : 'PDF' }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="panel-footer" *ngIf="getHiddenCount(data.recentFailedTests.length) > 0">
+          Showing 5 of {{ data.recentFailedTests.length }} records.
+        </div>
+
+        <ng-template #noFailedTests>
+          <div class="empty-state">
+            No recent failed tests found.
+          </div>
+        </ng-template>
+      </article>
+
+      <article class="dashboard-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Assets Due for Retest</h2>
+            <p>Assets that are due or overdue for another test.</p>
+          </div>
+
+          <a routerLink="/assets" class="panel-link">View assets</a>
+        </div>
+
+        <div class="table-wrap" *ngIf="getVisibleAssetsDueForRetest(data).length > 0; else noDueAssets">
+          <table>
+            <thead>
+              <tr>
+                <th>Asset</th>
+                <th>Site</th>
+                <th>Last Test</th>
+                <th>Next Due</th>
+                <th>Due Status</th>
+                <th>Risk</th>
+                <th class="actions-column">Action</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let asset of getVisibleAssetsDueForRetest(data); trackBy: trackByAsset">
+                <td>
+                  <div class="main-text">{{ getAssetName(asset) }}</div>
+                  <div class="muted-text">{{ getAssetTag(asset) }}</div>
+                </td>
+                <td>
+                  <div class="main-text">{{ asset.siteName || 'Unknown site' }}</div>
+                  <div class="muted-text">{{ asset.customerName || 'Unknown customer' }}</div>
+                </td>
+                <td>{{ getLastTestDate(asset) }}</td>
+                <td>{{ getNextDueDate(asset) }}</td>
+                <td>
+                  <span [class]="getDueBadgeClass(asset)">
+                    {{ getDueMessage(asset) }}
+                  </span>
+                </td>
+                <td>
+                  <span [class]="getBadgeClass(getRiskLevel(asset))">
+                    {{ getRiskLevel(asset) }}
+                  </span>
+                </td>
+                <td class="actions-cell">
+                  <a
+                    class="table-action-button"
+                    [routerLink]="['/assets', getAssetId(asset)]"
+                    [class.disabled]="!getAssetId(asset)">
+                    View
+                  </a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="panel-footer" *ngIf="getHiddenCount(data.assetsDueForRetest.length) > 0">
+          Showing 5 of {{ data.assetsDueForRetest.length }} records.
+        </div>
+
+        <ng-template #noDueAssets>
+          <div class="empty-state">
+            No assets are currently due for retest.
+          </div>
+        </ng-template>
+      </article>
+
+      <article class="dashboard-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Priority Jobs</h2>
+            <p>High-impact work orders that need operational attention.</p>
+          </div>
+
+          <a routerLink="/jobs" class="panel-link">View all</a>
+        </div>
+
+        <div class="table-wrap" *ngIf="getVisiblePriorityJobs(data).length > 0; else noPriorityJobs">
+          <table>
+            <thead>
+              <tr>
+                <th>Job</th>
+                <th>Asset</th>
+                <th>Site</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Due Date</th>
+                <th>Days Overdue</th>
+                <th class="actions-column">Action</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let job of getVisiblePriorityJobs(data); trackBy: trackByPriorityJob">
+                <td class="strong-cell">{{ getPriorityJobTitle(job) }}</td>
+                <td>
+                  <div class="main-text">{{ job.assetName || 'Unknown asset' }}</div>
+                  <div class="muted-text">{{ job.assetTag || 'No tag' }}</div>
+                </td>
+                <td>
+                  <div class="main-text">{{ job.siteName || 'Unknown site' }}</div>
+                  <div class="muted-text">{{ job.customerName || 'Unknown customer' }}</div>
+                </td>
+                <td>
+                  <span [class]="getBadgeClass(job.priority)">
+                    {{ job.priority || 'Not set' }}
+                  </span>
+                </td>
+                <td>
+                  <span [class]="getBadgeClass(job.status)">
+                    {{ job.status || 'Scheduled' }}
+                  </span>
+                </td>
+                <td>{{ getPriorityJobDueDate(job) }}</td>
+                <td>{{ getPriorityJobOverdue(job) }}</td>
+                <td class="actions-cell">
+                  <a
+                    class="table-action-button"
+                    [routerLink]="['/jobs', getPriorityJobId(job), 'edit']"
+                    [class.disabled]="!getPriorityJobId(job)">
+                    View
+                  </a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="panel-footer" *ngIf="getHiddenCount((data.priorityJobs || []).length) > 0">
+          Showing 5 of {{ (data.priorityJobs || []).length }} records.
+        </div>
+
+        <ng-template #noPriorityJobs>
+          <div class="empty-state">
+            No priority jobs are currently queued.
+          </div>
+        </ng-template>
+      </article>
+    </section>
+  </ng-container>
+</div>

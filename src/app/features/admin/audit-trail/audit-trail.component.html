@@ -1,0 +1,273 @@
+<div class="audit-page">
+  <app-page-header
+    title="Audit Trail"
+    subtitle="Review administrative and operational changes across VoltGuard">
+  </app-page-header>
+
+  <section class="toolbar-card">
+    <form class="filters-form" (ngSubmit)="applyFilters()">
+      <div class="filters-grid">
+        <label>
+          <span>Date from</span>
+          <input
+            name="fromDate"
+            type="datetime-local"
+            [(ngModel)]="fromDate" />
+        </label>
+
+        <label>
+          <span>Date to</span>
+          <input
+            name="toDate"
+            type="datetime-local"
+            [(ngModel)]="toDate" />
+        </label>
+
+        <label>
+          <span>User/email</span>
+          <input
+            name="actorEmail"
+            type="search"
+            [(ngModel)]="actorEmail"
+            placeholder="admin@voltguard.local"
+            autocomplete="off" />
+        </label>
+
+        <label>
+          <span>Action</span>
+          <select name="selectedAction" [(ngModel)]="selectedAction">
+            <option value="">All</option>
+            <option *ngFor="let action of actions" [value]="action">{{ action }}</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Entity type</span>
+          <select name="selectedEntityType" [(ngModel)]="selectedEntityType">
+            <option value="">All</option>
+            <option *ngFor="let entityType of entityTypes" [value]="entityType">
+              {{ entityType }}
+            </option>
+          </select>
+        </label>
+
+        <label class="search-field">
+          <span>Search</span>
+          <input
+            name="searchTerm"
+            type="search"
+            [(ngModel)]="searchTerm"
+            placeholder="Search audit records"
+            autocomplete="off" />
+        </label>
+      </div>
+
+      <div class="toolbar-actions">
+        <button type="submit" [disabled]="loading">Search</button>
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="clearFilters()"
+          [disabled]="loading || !hasActiveFilters()">
+          Clear filters
+        </button>
+      </div>
+    </form>
+
+    <div class="page-size-box">
+      <label for="pageSize">Rows</label>
+      <select
+        id="pageSize"
+        name="pageSize"
+        [ngModel]="pageSize"
+        (ngModelChange)="changePageSize($event)">
+        <option *ngFor="let option of pageSizeOptions" [ngValue]="option">
+          {{ option }}
+        </option>
+      </select>
+    </div>
+  </section>
+
+  <div class="message message--error" *ngIf="errorMessage">
+    <span>{{ errorMessage }}</span>
+    <button type="button" (click)="loadAuditLogs()">Try again</button>
+  </div>
+
+  <div class="loading-card" *ngIf="loading && auditLogs.length === 0">
+    Loading audit records...
+  </div>
+
+  <section class="audit-card" *ngIf="auditLogs.length > 0; else emptyAuditLogs">
+    <div class="table-summary">
+      Showing page {{ pageNumber }} of {{ totalPages }} &middot; {{ totalCount }} audit
+      record{{ totalCount === 1 ? '' : 's' }}
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date/Time</th>
+            <th>User</th>
+            <th>Action</th>
+            <th>Entity</th>
+            <th>Entity ID</th>
+            <th class="actions-heading">Details</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let log of auditLogs; trackBy: trackByAuditLog">
+            <td>
+              <span [title]="getUtcTimestamp(log.timestampUtc)">
+                {{ getLocalTimestamp(log.timestampUtc) }}
+              </span>
+            </td>
+            <td>
+              <div class="main-text">{{ getActorLabel(log) }}</div>
+              <div class="muted-text" *ngIf="log.actorUserId">{{ log.actorUserId }}</div>
+            </td>
+            <td>
+              <span [class]="getActionClass(log.action)">
+                {{ log.action }}
+              </span>
+            </td>
+            <td>{{ getEntityLabel(log) }}</td>
+            <td class="mono-text">{{ log.entityId }}</td>
+            <td class="actions-cell">
+              <button type="button" class="details-link" (click)="openDetails(log)">
+                Details
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-row">
+      <button
+        type="button"
+        class="page-button"
+        (click)="goToPage(pageNumber - 1)"
+        [disabled]="loading || !hasPreviousPage">
+        Previous
+      </button>
+
+      <div class="page-list">
+        <button
+          type="button"
+          class="page-number"
+          *ngFor="let page of getVisiblePages()"
+          [class.page-number--active]="page === pageNumber"
+          (click)="goToPage(page)"
+          [disabled]="loading">
+          {{ page }}
+        </button>
+      </div>
+
+      <button
+        type="button"
+        class="page-button"
+        (click)="goToPage(pageNumber + 1)"
+        [disabled]="loading || !hasNextPage">
+        Next
+      </button>
+    </div>
+  </section>
+
+  <ng-template #emptyAuditLogs>
+    <div class="empty-state" *ngIf="!loading">
+      <h2>No audit records found.</h2>
+      <p>No audit record matches the current filters.</p>
+    </div>
+  </ng-template>
+
+  <div class="drawer-backdrop" *ngIf="selectedLog" (click)="closeDetails()"></div>
+
+  <aside class="details-drawer" *ngIf="selectedLog" role="dialog" aria-modal="true">
+    <header class="drawer-header">
+      <div>
+        <span [class]="getActionClass(selectedLog.action)">
+          {{ selectedLog.action }}
+        </span>
+        <h2>{{ getDetailsTitle(selectedLog) }}</h2>
+        <p [title]="getUtcTimestamp(selectedLog.timestampUtc)">
+          {{ getLocalTimestamp(selectedLog.timestampUtc) }}
+        </p>
+      </div>
+
+      <button type="button" class="close-button" (click)="closeDetails()" aria-label="Close details">
+        &times;
+      </button>
+    </header>
+
+    <section class="detail-section">
+      <h3>Record</h3>
+      <dl class="detail-list">
+        <div>
+          <dt>Timestamp UTC</dt>
+          <dd>{{ getUtcTimestamp(selectedLog.timestampUtc) }}</dd>
+        </div>
+        <div>
+          <dt>User email</dt>
+          <dd>{{ getValueOrDash(selectedLog.actorEmail) }}</dd>
+        </div>
+        <div>
+          <dt>User id</dt>
+          <dd>{{ getValueOrDash(selectedLog.actorUserId) }}</dd>
+        </div>
+        <div>
+          <dt>Action</dt>
+          <dd>{{ selectedLog.action }}</dd>
+        </div>
+        <div>
+          <dt>Entity type</dt>
+          <dd>{{ selectedLog.entityType }}</dd>
+        </div>
+        <div>
+          <dt>Entity id</dt>
+          <dd class="mono-text">{{ selectedLog.entityId }}</dd>
+        </div>
+        <div>
+          <dt>IP address</dt>
+          <dd>{{ getValueOrDash(selectedLog.ipAddress) }}</dd>
+        </div>
+        <div>
+          <dt>User agent</dt>
+          <dd>{{ getValueOrDash(selectedLog.userAgent) }}</dd>
+        </div>
+        <div>
+          <dt>Correlation id</dt>
+          <dd>{{ getValueOrDash(selectedLog.correlationId) }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="detail-section">
+      <h3>Changed fields</h3>
+
+      <div class="changes-table" *ngIf="selectedChanges.length > 0; else noChanges">
+        <table>
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Old value</th>
+              <th>New value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let change of selectedChanges; trackBy: trackByChange">
+              <td>{{ change.field }}</td>
+              <td>{{ change.oldValue }}</td>
+              <td>{{ change.newValue }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #noChanges>
+        <p class="muted-copy">No readable field changes were recorded.</p>
+      </ng-template>
+    </section>
+  </aside>
+</div>

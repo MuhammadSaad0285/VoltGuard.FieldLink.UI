@@ -1,0 +1,295 @@
+﻿<div class="test-results-page">
+  <div class="test-results-header-row">
+    <app-page-header
+      title="Test Results"
+      subtitle="Review electrical test outcomes, risk levels, measurements, and reports">
+    </app-page-header>
+
+    <a *ngIf="canCreate" routerLink="/test-results/new" class="primary-action">
+      New Test Result
+    </a>
+  </div>
+
+  <section class="toolbar-card">
+    <form class="search-form" (ngSubmit)="applySearch()">
+      <label class="search-label" for="testResultSearch">Search test results</label>
+
+      <div class="search-grid">
+        <input
+          id="testResultSearch"
+          name="testResultSearch"
+          type="search"
+          [(ngModel)]="searchTerm"
+          placeholder="Search reference, asset, customer, site, engineer..."
+          autocomplete="off" />
+
+        <select
+          name="selectedCustomerId"
+          [ngModel]="selectedCustomerId"
+          (ngModelChange)="filterByCustomer($event)"
+          [disabled]="customersLoading">
+          <option value="">All customers</option>
+          <option
+            *ngFor="let customer of customers; trackBy: trackByCustomer"
+            [value]="customer.id">
+            {{ getCustomerDropdownLabel(customer) }}
+          </option>
+        </select>
+
+        <select
+          name="selectedSiteId"
+          [ngModel]="selectedSiteId"
+          (ngModelChange)="filterBySite($event)"
+          [disabled]="sitesLoading || !selectedCustomerId">
+          <option value="">All sites</option>
+          <option
+            *ngFor="let site of sites; trackBy: trackBySite"
+            [value]="site.id">
+            {{ getSiteDropdownLabel(site) }}
+          </option>
+        </select>
+
+        <select
+          name="selectedAssetId"
+          [ngModel]="selectedAssetId"
+          (ngModelChange)="filterByAsset($event)"
+          [disabled]="assetsLoading || (!selectedCustomerId && !selectedSiteId)">
+          <option value="">All assets</option>
+          <option
+            *ngFor="let asset of assets; trackBy: trackByAsset"
+            [value]="asset.id">
+            {{ getAssetDropdownLabel(asset) }}
+          </option>
+        </select>
+
+        <select
+          name="selectedStatus"
+          [ngModel]="selectedStatus"
+          (ngModelChange)="filterByStatus($event)">
+          <option value="">All statuses</option>
+          <option *ngFor="let status of statusOptions" [value]="status">
+            {{ status }}
+          </option>
+        </select>
+
+        <select
+          name="selectedRiskLevel"
+          [ngModel]="selectedRiskLevel"
+          (ngModelChange)="filterByRisk($event)">
+          <option value="">All risk levels</option>
+          <option *ngFor="let risk of riskOptions" [value]="risk">
+            {{ risk }}
+          </option>
+        </select>
+
+        <input
+          name="dateFrom"
+          type="date"
+          [(ngModel)]="dateFrom"
+          aria-label="Date from" />
+
+        <input
+          name="dateTo"
+          type="date"
+          [(ngModel)]="dateTo"
+          aria-label="Date to" />
+      </div>
+
+      <div class="toolbar-actions">
+        <button type="submit" [disabled]="loading">
+          Search
+        </button>
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="clearFilters()"
+          [disabled]="loading">
+          Clear filters
+        </button>
+      </div>
+    </form>
+
+    <div class="page-size-box">
+      <label for="pageSize">Rows</label>
+      <select
+        id="pageSize"
+        [ngModel]="pageSize"
+        (ngModelChange)="changePageSize($event)"
+        name="pageSize">
+        <option *ngFor="let option of pageSizeOptions" [ngValue]="option">
+          {{ option }}
+        </option>
+      </select>
+    </div>
+  </section>
+
+  <div class="message message--success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <div class="message message--error" *ngIf="errorMessage">
+    <span>{{ errorMessage }}</span>
+    <button type="button" (click)="loadTestResults()">Try again</button>
+  </div>
+
+  <div class="loading-card" *ngIf="loading && testResults.length === 0">
+    Loading test results...
+  </div>
+
+  <section class="test-results-card" *ngIf="testResults.length > 0; else emptyTestResults">
+    <div class="table-summary">
+      Showing page {{ pageNumber }} of {{ totalPages }} · {{ totalCount }} test result{{ totalCount === 1 ? '' : 's' }}
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Reference</th>
+            <th>Asset</th>
+            <th>Customer / Site</th>
+            <th>Test</th>
+            <th>Status</th>
+            <th>Risk</th>
+            <th>Engineer</th>
+            <th>Measurements</th>
+            <th class="actions-column">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let result of testResults; trackBy: trackByTestResult">
+            <td>
+              <strong>{{ getTestReference(result) }}</strong>
+              <span>{{ getTestDate(result) }}</span>
+            </td>
+
+            <td>
+              <strong>{{ getAssetName(result) }}</strong>
+              <span>{{ getAssetTag(result) }}</span>
+            </td>
+
+            <td>
+              <strong>{{ getCustomerName(result) }}</strong>
+              <span>{{ getSiteName(result) }}</span>
+            </td>
+
+            <td>
+              <strong>{{ getTestType(result) }}</strong>
+            </td>
+
+            <td>
+              <span [class]="getStatusClass(getStatus(result))">
+                {{ getStatus(result) }}
+              </span>
+            </td>
+
+            <td>
+              <span [class]="getRiskClass(getRiskLevel(result))">
+                {{ getRiskLevel(result) }}
+              </span>
+            </td>
+
+            <td>{{ getEngineerName(result) }}</td>
+
+            <td>{{ getMeasurementCount(result) }}</td>
+
+            <td class="actions-cell">
+              <div
+                class="action-menu"
+                [class.action-menu--open]="openActionMenuId === getTestResultId(result)"
+                (click)="keepActionMenuOpen($event)">
+                <button
+                  type="button"
+                  class="action-menu-trigger"
+                  [attr.aria-expanded]="openActionMenuId === getTestResultId(result)"
+                  (click)="toggleActionMenu(result, $event)">
+                  Actions
+                </button>
+
+                <div class="action-menu-panel" *ngIf="openActionMenuId === getTestResultId(result)">
+                  <a
+                    class="action-menu-item"
+                    [routerLink]="['/test-results', getTestResultId(result)]"
+                    (click)="closeActionMenu()">
+                    View
+                  </a>
+
+                  <button
+                    type="button"
+                    class="action-menu-item"
+                    (click)="downloadReport(result)"
+                    [disabled]="!getTestResultId(result) || reportLoadingId === getTestResultId(result)">
+                    {{ reportLoadingId === getTestResultId(result) ? 'Downloading...' : 'Report' }}
+                  </button>
+
+                  <button
+                    *ngIf="canDelete"
+                    type="button"
+                    class="action-menu-item action-menu-item--danger"
+                    (click)="deleteTestResult(result)"
+                    [disabled]="actionLoadingId === getTestResultId(result)">
+                    {{ actionLoadingId === getTestResultId(result) ? 'Deleting...' : 'Delete' }}
+                  </button>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="pagination-row">
+      <button
+        type="button"
+        class="page-button"
+        (click)="goToPage(pageNumber - 1)"
+        [disabled]="!hasPreviousPage || loading">
+        Previous
+      </button>
+
+      <div class="page-list">
+        <button
+          type="button"
+          class="page-number"
+          *ngFor="let page of getVisiblePages()"
+          [class.page-number--active]="page === pageNumber"
+          (click)="goToPage(page)"
+          [disabled]="loading">
+          {{ page }}
+        </button>
+      </div>
+
+      <button
+        type="button"
+        class="page-button"
+        (click)="goToPage(pageNumber + 1)"
+        [disabled]="!hasNextPage || loading">
+        Next
+      </button>
+    </footer>
+  </section>
+
+  <ng-template #emptyTestResults>
+    <div class="empty-state" *ngIf="!loading">
+      <h2>No test results found</h2>
+      <p>Try changing the filters or create a new test result.</p>
+      <a *ngIf="canCreate" routerLink="/test-results/new" class="primary-action">
+        New Test Result
+      </a>
+    </div>
+  </ng-template>
+
+  <app-confirm-dialog
+    *ngIf="pendingDeleteResult"
+    title="Delete test result"
+    [message]="'Delete test result &quot;' + getTestReference(pendingDeleteResult) + '&quot;? This cannot be undone.'"
+    confirmText="Delete"
+    busyText="Deleting..."
+    [busy]="!!actionLoadingId"
+    [danger]="true"
+    (confirm)="confirmDelete()"
+    (cancel)="cancelDelete()">
+  </app-confirm-dialog>
+</div>

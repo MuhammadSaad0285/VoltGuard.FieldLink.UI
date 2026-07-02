@@ -1,0 +1,245 @@
+﻿<div class="asset-detail-page">
+  <div class="asset-detail-header-row">
+    <app-page-header
+      [title]="asset ? getAssetName(asset) : 'Asset Details'"
+      subtitle="Asset information, latest risk, due date and test history">
+    </app-page-header>
+
+    <div class="header-actions">
+      <a routerLink="/assets" class="secondary-action">
+        Back to Assets
+      </a>
+
+      <a
+        *ngIf="canEdit && asset as currentAsset"
+        [routerLink]="['/assets', currentAsset.id, 'edit']"
+        class="primary-action">
+        Edit Asset
+      </a>
+    </div>
+  </div>
+
+  <div class="message message--error" *ngIf="errorMessage">
+    <span>{{ errorMessage }}</span>
+    <button type="button" (click)="loadAssetDetails()">Try again</button>
+  </div>
+
+  <div class="loading-card" *ngIf="loading && !asset">
+    Loading asset details...
+  </div>
+
+  <ng-container *ngIf="asset as currentAsset">
+    <section class="summary-grid">
+      <article class="summary-card">
+        <span class="summary-label">Latest Risk</span>
+        <span [class]="getRiskClass(currentAsset)">
+          {{ getRiskLevel(currentAsset) }}
+        </span>
+      </article>
+
+      <article class="summary-card">
+        <span class="summary-label">Latest Test Date</span>
+        <strong>{{ getLatestTestDate(currentAsset) }}</strong>
+      </article>
+
+      <article class="summary-card">
+        <span class="summary-label">Next Due Date</span>
+        <strong>{{ getNextDueDate(currentAsset) }}</strong>
+      </article>
+
+      <article class="summary-card">
+        <span class="summary-label">Status</span>
+        <span [class]="getStatusClass(currentAsset)">
+          {{ getStatusLabel(currentAsset) }}
+        </span>
+      </article>
+    </section>
+
+    <section class="detail-grid">
+      <article class="detail-card">
+        <div class="section-heading">
+          <h2>Asset Information</h2>
+        </div>
+
+        <dl class="details-list">
+          <div>
+            <dt>Asset Name</dt>
+            <dd>{{ getAssetName(currentAsset) }}</dd>
+          </div>
+
+          <div>
+            <dt>Asset Tag</dt>
+            <dd>{{ getAssetTag(currentAsset) }}</dd>
+          </div>
+
+          <div>
+            <dt>Serial Number</dt>
+            <dd>{{ currentAsset.serialNumber || 'Not set' }}</dd>
+          </div>
+
+          <div>
+            <dt>Type</dt>
+            <dd>{{ getAssetType(currentAsset) }}</dd>
+          </div>
+
+          <div>
+            <dt>Manufacturer / Model</dt>
+            <dd>{{ getManufacturerModel(currentAsset) }}</dd>
+          </div>
+
+          <div>
+            <dt>Rating</dt>
+            <dd>{{ getRating(currentAsset) }}</dd>
+          </div>
+
+          <div>
+            <dt>Installed Date</dt>
+            <dd>{{ getInstalledDate(currentAsset) }}</dd>
+          </div>
+
+          <div>
+            <dt>Location</dt>
+            <dd>{{ getLocation(currentAsset) }}</dd>
+          </div>
+        </dl>
+      </article>
+
+      <article class="detail-card">
+        <div class="section-heading">
+          <h2>Site / Testing Summary</h2>
+        </div>
+
+        <dl class="details-list">
+          <div>
+            <dt>Customer</dt>
+            <dd>{{ getCustomerName(currentAsset) }}</dd>
+          </div>
+
+          <div>
+            <dt>Site</dt>
+            <dd>{{ getSiteName(currentAsset) }}</dd>
+          </div>
+
+          <div>
+            <dt>Latest Test Reference</dt>
+            <dd>{{ getLatestTestReference(currentAsset) }}</dd>
+          </div>
+
+          <div>
+            <dt>Latest Result</dt>
+            <dd>{{ getLatestResultStatus(currentAsset) }}</dd>
+          </div>
+
+          <div>
+            <dt>Latest Test</dt>
+            <dd>{{ getLatestTestDate(currentAsset) }}</dd>
+          </div>
+
+          <div>
+            <dt>Next Due</dt>
+            <dd>{{ getNextDueDate(currentAsset) }}</dd>
+          </div>
+        </dl>
+
+        <div class="quick-actions">
+          <a
+            *ngIf="canCreate"
+            routerLink="/test-results/new"
+            [queryParams]="{ assetId: currentAsset.id }"
+            class="secondary-action">
+            Add Test Result
+          </a>
+
+          <a
+            *ngIf="getLatestTestResultId(currentAsset)"
+            [routerLink]="['/test-results', getLatestTestResultId(currentAsset)]"
+            class="secondary-action">
+            View Latest Test
+          </a>
+        </div>
+      </article>
+    </section>
+
+    <section class="notes-card" *ngIf="currentAsset.notes">
+      <h2>Notes</h2>
+      <p>{{ currentAsset.notes }}</p>
+    </section>
+
+    <section class="jobs-card">
+      <div class="section-heading">
+        <div>
+          <h2>Jobs / Work Orders</h2>
+        </div>
+
+        <a
+          *ngIf="canManageJobs"
+          routerLink="/jobs/new"
+          [queryParams]="{ assetId: currentAsset.id }"
+          class="secondary-action">
+          New Job
+        </a>
+      </div>
+
+      <div class="message message--error" *ngIf="jobsErrorMessage">
+        {{ jobsErrorMessage }}
+      </div>
+
+      <div class="table-wrap" *ngIf="jobs.length > 0; else noJobs">
+        <table>
+          <thead>
+            <tr>
+              <th>Job</th>
+              <th>Type</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Assigned To</th>
+              <th>Due Date</th>
+              <th>Overdue</th>
+              <th class="actions-column">Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let job of jobs; trackBy: trackByJob">
+              <td>
+                <div class="main-text">{{ getJobTitle(job) }}</div>
+                <div class="muted-text">{{ job.description || job.notes || 'No description' }}</div>
+              </td>
+              <td>{{ getJobType(job) }}</td>
+              <td>
+                <span [class]="getJobBadgeClass(getJobPriority(job))">
+                  {{ getJobPriority(job) }}
+                </span>
+              </td>
+              <td>
+                <span [class]="getJobBadgeClass(getJobStatus(job))">
+                  {{ getJobStatus(job) }}
+                </span>
+              </td>
+              <td>{{ getJobAssignee(job) }}</td>
+              <td>{{ getJobDueDate(job) }}</td>
+              <td>{{ getJobOverdue(job) }}</td>
+              <td>
+                <a *ngIf="canManageJobs" [routerLink]="['/jobs', job.id, 'edit']" class="action-link">
+                  Open
+                </a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #noJobs>
+        <div class="empty-state">
+          No jobs are linked to this asset yet.
+        </div>
+      </ng-template>
+    </section>
+
+    <app-asset-test-history
+      [history]="testHistory"
+      [loading]="loading"
+      [errorMessage]="historyErrorMessage">
+    </app-asset-test-history>
+  </ng-container>
+</div>

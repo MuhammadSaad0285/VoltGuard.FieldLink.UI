@@ -1,0 +1,249 @@
+﻿<div class="assets-page">
+  <div class="assets-header-row">
+    <app-page-header
+      title="Assets"
+      subtitle="Manage electrical assets linked to customer sites">
+    </app-page-header>
+
+    <a *ngIf="canCreate" routerLink="/assets/new" class="primary-action">
+      New Asset
+    </a>
+  </div>
+
+  <section class="toolbar-card">
+    <form class="search-form" (ngSubmit)="applySearch()">
+      <label class="search-label" for="assetSearch">Search assets</label>
+
+      <div class="search-row">
+        <input
+          id="assetSearch"
+          name="assetSearch"
+          type="search"
+          [(ngModel)]="searchTerm"
+          placeholder="Search by asset name, tag, serial number, type..."
+          autocomplete="off" />
+
+        <select
+          name="selectedCustomerId"
+          [ngModel]="selectedCustomerId"
+          (ngModelChange)="filterByCustomer($event)"
+          [disabled]="customersLoading">
+          <option value="">All customers</option>
+          <option
+            *ngFor="let customer of customers; trackBy: trackByCustomer"
+            [value]="customer.id">
+            {{ getCustomerDropdownLabel(customer) }}
+          </option>
+        </select>
+
+        <select
+          name="selectedSiteId"
+          [ngModel]="selectedSiteId"
+          (ngModelChange)="filterBySite($event)"
+          [disabled]="!selectedCustomerId || sitesLoading">
+          <option value="">All sites</option>
+          <option
+            *ngFor="let site of sites; trackBy: trackBySite"
+            [value]="site.id">
+            {{ getSiteDropdownLabel(site) }}
+          </option>
+        </select>
+
+        <button type="submit" [disabled]="loading">
+          Search
+        </button>
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="clearFilters()"
+          [disabled]="loading || (!searchTerm && !selectedCustomerId && !selectedSiteId && !includeInactive)">
+          Clear
+        </button>
+      </div>
+
+      <label class="checkbox-filter">
+        <input
+          type="checkbox"
+          name="includeInactive"
+          [(ngModel)]="includeInactive"
+          (ngModelChange)="toggleIncludeInactive()" />
+        Include inactive assets
+      </label>
+    </form>
+
+    <div class="page-size-box">
+      <label for="pageSize">Rows</label>
+      <select
+        id="pageSize"
+        [ngModel]="pageSize"
+        (ngModelChange)="changePageSize($event)"
+        name="pageSize">
+        <option *ngFor="let option of pageSizeOptions" [ngValue]="option">
+          {{ option }}
+        </option>
+      </select>
+    </div>
+  </section>
+
+  <div class="message message--success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <div class="message message--error" *ngIf="errorMessage">
+    <span>{{ errorMessage }}</span>
+    <button type="button" (click)="loadAssets()">Try again</button>
+  </div>
+
+  <div class="loading-card" *ngIf="loading && assets.length === 0">
+    Loading assets...
+  </div>
+
+  <section class="assets-card" *ngIf="assets.length > 0; else emptyAssets">
+    <div class="table-summary">
+      Showing page {{ pageNumber }} of {{ totalPages }} · {{ totalCount }} asset{{ totalCount === 1 ? '' : 's' }}
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th>Customer / Site</th>
+            <th>Type</th>
+            <th>Rating</th>
+            <th>Last Test</th>
+            <th>Next Due</th>
+            <th>Risk</th>
+            <th>Status</th>
+            <th class="actions-heading">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let asset of assets; trackBy: trackByAsset">
+            <td>
+              <div class="main-text">{{ getAssetName(asset) }}</div>
+              <div class="muted-text">{{ getAssetTag(asset) }} · {{ asset.serialNumber || 'No serial number' }}</div>
+              <div class="muted-text">{{ getManufacturerModel(asset) }}</div>
+            </td>
+
+            <td>
+              <div class="main-text">{{ getCustomerName(asset) }}</div>
+              <div class="muted-text">{{ getSiteName(asset) }}</div>
+              <div class="muted-text">{{ getLocation(asset) }}</div>
+            </td>
+
+            <td>{{ getAssetType(asset) }}</td>
+
+            <td>{{ getRating(asset) }}</td>
+
+            <td>{{ getLastTestDate(asset) }}</td>
+
+            <td>{{ getNextDueDate(asset) }}</td>
+
+            <td>
+              <span [class]="getRiskClass(asset)">
+                {{ getRiskLevel(asset) }}
+              </span>
+            </td>
+
+            <td>
+              <span [class]="getStatusClass(asset)">
+                {{ getStatusLabel(asset) }}
+              </span>
+            </td>
+
+            <td class="actions-cell">
+              <div
+                class="action-menu"
+                [class.action-menu--open]="openActionMenuId === asset.id"
+                (click)="keepActionMenuOpen($event)">
+                <button
+                  type="button"
+                  class="action-menu-trigger"
+                  [attr.aria-expanded]="openActionMenuId === asset.id"
+                  (click)="toggleActionMenu(asset, $event)">
+                  Actions
+                </button>
+
+                <div class="action-menu-panel" *ngIf="openActionMenuId === asset.id">
+                  <a
+                    [routerLink]="['/assets', asset.id]"
+                    class="action-menu-item"
+                    (click)="closeActionMenu()">
+                    Details
+                  </a>
+
+                  <a
+                    *ngIf="canEdit"
+                    [routerLink]="['/assets', asset.id, 'edit']"
+                    class="action-menu-item"
+                    (click)="closeActionMenu()">
+                    Edit
+                  </a>
+
+                  <button
+                    *ngIf="canDelete"
+                    type="button"
+                    class="action-menu-item action-menu-item--danger"
+                    (click)="deactivateAsset(asset)"
+                    [disabled]="actionLoadingId === asset.id">
+                    {{ actionLoadingId === asset.id ? 'Working...' : 'Deactivate' }}
+                  </button>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-row">
+      <button
+        type="button"
+        class="page-button"
+        (click)="goToPage(pageNumber - 1)"
+        [disabled]="loading || !hasPreviousPage">
+        Previous
+      </button>
+
+      <div class="page-list">
+        <button
+          type="button"
+          class="page-number"
+          *ngFor="let page of getVisiblePages()"
+          [class.page-number--active]="page === pageNumber"
+          (click)="goToPage(page)"
+          [disabled]="loading">
+          {{ page }}
+        </button>
+      </div>
+
+      <button
+        type="button"
+        class="page-button"
+        (click)="goToPage(pageNumber + 1)"
+        [disabled]="loading || !hasNextPage">
+        Next
+      </button>
+    </div>
+  </section>
+
+  <ng-template #emptyAssets>
+    <div class="empty-state" *ngIf="!loading">
+      <h2>No assets found</h2>
+      <p *ngIf="searchTerm || selectedCustomerId || selectedSiteId; else noSearchText">
+        No asset matches your current search/filter.
+      </p>
+
+      <ng-template #noSearchText>
+        <p>Create your first asset. Every asset must be linked to a site, and every site belongs to a customer.</p>
+      </ng-template>
+
+      <a *ngIf="canCreate" routerLink="/assets/new" class="primary-action">
+        Create Asset
+      </a>
+    </div>
+  </ng-template>
+</div>

@@ -1,0 +1,173 @@
+<div class="job-form-page">
+  <div class="form-header-row">
+    <app-page-header
+      [title]="getTitle()"
+      [subtitle]="getSubtitle()">
+    </app-page-header>
+
+    <a routerLink="/jobs" class="back-link">
+      Back to Jobs
+    </a>
+  </div>
+
+  <div class="message message--success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <div class="message message--error" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+
+  <div class="message message--locked" *ngIf="isLocked">
+    Completed and cancelled jobs are locked from normal editing.
+  </div>
+
+  <div class="loading-card" *ngIf="loading">
+    Loading job...
+  </div>
+
+  <form class="job-form-card" [formGroup]="form" (ngSubmit)="save()" *ngIf="!loading">
+    <section class="form-section">
+      <h2>Asset Link</h2>
+      <p>Select the asset this work order belongs to. Customer and site can narrow the asset list.</p>
+
+      <div class="form-grid">
+        <label class="form-field">
+          <span>Customer</span>
+          <select
+            formControlName="customerId"
+            (change)="onCustomerChange()"
+            [disabled]="customersLoading || saving || isLocked">
+            <option value="">All customers</option>
+            <option *ngFor="let customer of customers" [value]="customer.id">
+              {{ getCustomerDropdownLabel(customer) }}
+            </option>
+          </select>
+        </label>
+
+        <label class="form-field">
+          <span>Site</span>
+          <select
+            formControlName="siteId"
+            (change)="onSiteChange()"
+            [disabled]="!form.controls.customerId.value || sitesLoading || saving || isLocked">
+            <option value="">
+              {{ form.controls.customerId.value ? 'All sites' : 'Select customer first' }}
+            </option>
+            <option *ngFor="let site of sites" [value]="site.id">
+              {{ getSiteDropdownLabel(site) }}
+            </option>
+          </select>
+        </label>
+
+        <label class="form-field form-field--full">
+          <span>Asset <strong>*</strong></span>
+          <select formControlName="assetId" [disabled]="assetsLoading || saving || isLocked">
+            <option value="">Select asset</option>
+            <option *ngFor="let asset of assets" [value]="asset.id">
+              {{ getAssetDropdownLabel(asset) }}
+            </option>
+          </select>
+          <small *ngIf="isControlInvalid('assetId')">Asset is required.</small>
+        </label>
+
+        <label class="form-field form-field--full">
+          <span>Linked Test Result</span>
+          <input
+            type="text"
+            formControlName="testResultId"
+            placeholder="Optional test result id" />
+        </label>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2>Work Details</h2>
+      <p>Use the exact backend job type and priority values for the operational workflow.</p>
+
+      <div class="form-grid">
+        <label class="form-field form-field--full">
+          <span>Title <strong>*</strong></span>
+          <input
+            type="text"
+            formControlName="title"
+            placeholder="Follow-up for failed test" />
+          <small *ngIf="isControlInvalid('title')">Title is required.</small>
+        </label>
+
+        <label class="form-field">
+          <span>Job Type <strong>*</strong></span>
+          <select formControlName="jobType">
+            <option value="">Select job type</option>
+            <option *ngFor="let type of jobTypes" [value]="type">{{ type }}</option>
+          </select>
+          <small *ngIf="isControlInvalid('jobType')">Job type is required.</small>
+        </label>
+
+        <label class="form-field">
+          <span>Priority <strong>*</strong></span>
+          <select formControlName="priority">
+            <option value="">Select priority</option>
+            <option *ngFor="let priority of priorities" [value]="priority">{{ priority }}</option>
+          </select>
+          <small *ngIf="isControlInvalid('priority')">Priority is required.</small>
+        </label>
+
+        <label class="form-field form-field--full">
+          <span>Description</span>
+          <textarea
+            rows="4"
+            formControlName="description"
+            placeholder="Describe the work required..."></textarea>
+        </label>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2>Schedule</h2>
+
+      <div class="form-grid">
+        <label class="form-field">
+          <span>Assigned To</span>
+          <select formControlName="assignedToUserId" [disabled]="engineersLoading || saving || isLocked">
+            <option value="">Unassigned</option>
+            <option *ngFor="let engineer of engineers" [value]="engineer.id">
+              {{ getEngineerDropdownLabel(engineer) }}
+            </option>
+          </select>
+        </label>
+
+        <label class="form-field">
+          <span>Scheduled Date</span>
+          <input type="date" formControlName="scheduledDateUtc" />
+        </label>
+
+        <label class="form-field">
+          <span>Due Date</span>
+          <input type="date" formControlName="dueDateUtc" />
+        </label>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2>Job Notes</h2>
+
+      <label class="form-field">
+        <textarea
+          rows="4"
+          formControlName="notes"
+          placeholder="Internal notes for the job..."></textarea>
+      </label>
+    </section>
+
+    <div class="form-actions">
+      <button type="button" class="secondary-action" (click)="cancel()" [disabled]="saving">
+        Cancel
+      </button>
+
+      <button type="submit" class="primary-action" [disabled]="saving || isLocked">
+        {{ saving ? 'Saving...' : isEditMode ? 'Update Job' : 'Create Job' }}
+      </button>
+    </div>
+  </form>
+</div>

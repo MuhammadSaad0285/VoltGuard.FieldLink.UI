@@ -1,0 +1,214 @@
+﻿<div class="asset-form-page">
+  <div class="form-header-row">
+    <app-page-header
+      [title]="getTitle()"
+      [subtitle]="getSubtitle()">
+    </app-page-header>
+
+    <a routerLink="/assets" class="back-link">
+      Back to Assets
+    </a>
+  </div>
+
+  <div class="message message--success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <div class="message message--error" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+
+  <div class="loading-card" *ngIf="loading">
+    Loading asset...
+  </div>
+
+  <form class="asset-form-card" [formGroup]="form" (ngSubmit)="save()" *ngIf="!loading">
+    <section class="form-section">
+      <h2>Customer and Site</h2>
+      <p>Select the customer first. The site dropdown will then show only sites for that customer.</p>
+
+      <div class="form-grid">
+        <label class="form-field">
+          <span>Customer <strong>*</strong></span>
+          <select
+            formControlName="customerId"
+            (change)="onCustomerChange()"
+            [disabled]="customersLoading || saving">
+            <option value="">Select customer</option>
+            <option
+              *ngFor="let customer of customers"
+              [value]="customer.id">
+              {{ getCustomerDropdownLabel(customer) }}
+            </option>
+          </select>
+          <small *ngIf="isControlInvalid('customerId')">Customer is required.</small>
+        </label>
+
+        <label class="form-field">
+          <span>Site <strong>*</strong></span>
+          <select
+            formControlName="siteId"
+            [disabled]="!form.controls.customerId.value || sitesLoading || saving">
+            <option value="">
+              {{ form.controls.customerId.value ? 'Select site' : 'Select customer first' }}
+            </option>
+            <option
+              *ngFor="let site of sites"
+              [value]="site.id">
+              {{ getSiteDropdownLabel(site) }}
+            </option>
+          </select>
+          <small *ngIf="isControlInvalid('siteId')">Site is required.</small>
+        </label>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2>Asset Details</h2>
+      <p>Enter the main identity and classification details for the electrical asset.</p>
+
+      <div class="form-grid">
+        <label class="form-field">
+          <span>Asset Name <strong>*</strong></span>
+          <input
+            type="text"
+            formControlName="name"
+            placeholder="Main Distribution Board" />
+          <small *ngIf="isControlInvalid('name')">Asset name is required.</small>
+        </label>
+
+        <label class="form-field">
+          <span>Asset Tag <strong>*</strong></span>
+          <input
+            type="text"
+            formControlName="assetTag"
+            placeholder="MDB-001" />
+          <small *ngIf="isControlInvalid('assetTag')">Asset tag is required.</small>
+        </label>
+
+        <label class="form-field">
+          <span>Serial Number</span>
+          <input
+            type="text"
+            formControlName="serialNumber"
+            placeholder="SN-123456" />
+        </label>
+
+        <label class="form-field">
+          <span>Asset Type <strong>*</strong></span>
+          <select formControlName="assetType">
+            <option value="">Select asset type</option>
+            <option *ngFor="let type of assetTypes" [value]="type">
+              {{ type }}
+            </option>
+          </select>
+          <small *ngIf="isControlInvalid('assetType')">Asset type is required.</small>
+        </label>
+
+        <label class="form-field">
+          <span>Manufacturer</span>
+          <input
+            type="text"
+            formControlName="manufacturer"
+            placeholder="Schneider Electric" />
+        </label>
+
+        <label class="form-field">
+          <span>Model</span>
+          <input
+            type="text"
+            formControlName="model"
+            placeholder="Model number" />
+        </label>
+
+        <label class="form-field form-field--full">
+          <span>Location Description</span>
+          <input
+            type="text"
+            formControlName="locationDescription"
+            placeholder="Plant room, ground floor" />
+        </label>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2>Ratings and Dates</h2>
+      <p>Optional technical values used for asset context and future testing workflow.</p>
+
+      <div class="form-grid">
+        <label class="form-field">
+          <span>Rated Voltage</span>
+          <input
+            type="number"
+            formControlName="ratedVoltage"
+            placeholder="415" />
+        </label>
+
+        <label class="form-field">
+          <span>Rated Current</span>
+          <input
+            type="number"
+            formControlName="ratedCurrent"
+            placeholder="100" />
+        </label>
+
+        <label class="form-field">
+          <span>Installed Date</span>
+          <input
+            type="date"
+            formControlName="installedAtUtc" />
+        </label>
+
+        <label class="form-field">
+          <span>Last Tested Date</span>
+          <input
+            type="date"
+            formControlName="lastTestedAtUtc" />
+        </label>
+
+        <label class="form-field">
+          <span>Next Test Due Date</span>
+          <input
+            type="date"
+            formControlName="nextTestDueAtUtc" />
+        </label>
+
+        <label class="form-field checkbox-field" *ngIf="isEditMode">
+          <input
+            type="checkbox"
+            formControlName="isActive" />
+          <span>Asset is active</span>
+        </label>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <!-- <h2>Notes</h2> -->
+
+      <label class="form-field">
+        <span>Notes</span>
+        <textarea
+          rows="4"
+          formControlName="notes"
+          placeholder="Any extra asset information..."></textarea>
+      </label>
+    </section>
+
+    <div class="form-actions">
+      <button
+        type="button"
+        class="secondary-action"
+        (click)="cancel()"
+        [disabled]="saving">
+        Cancel
+      </button>
+
+      <button
+        type="submit"
+        class="primary-action"
+        [disabled]="saving">
+        {{ saving ? 'Saving...' : isEditMode ? 'Update Asset' : 'Create Asset' }}
+      </button>
+    </div>
+  </form>
+</div>

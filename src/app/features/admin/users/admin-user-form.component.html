@@ -1,0 +1,99 @@
+<div class="admin-user-form-page">
+  <div class="form-header-row">
+    <app-page-header
+      [title]="pageTitle"
+      [subtitle]="pageSubtitle">
+    </app-page-header>
+
+    <a routerLink="/admin/users" class="back-link">
+      Back to Users
+    </a>
+  </div>
+
+  <div class="message message--error" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+
+  <div class="loading-card" *ngIf="loading">
+    Loading user...
+  </div>
+
+  <form class="admin-user-form-card" [formGroup]="userForm" (ngSubmit)="save()" *ngIf="!loading">
+    <section class="form-section">
+      <div class="section-title">
+        <h2>User Details</h2>
+        <p>Main identity fields for sign-in and account records.</p>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="fullName">Full name *</label>
+          <input
+            id="fullName"
+            type="text"
+            formControlName="fullName"
+            placeholder="Jane Patel"
+            [class.invalid]="isInvalid('fullName')" />
+          <small *ngIf="getFieldError('fullName')">{{ getFieldError('fullName') }}</small>
+        </div>
+
+        <div class="form-field">
+          <label for="email">Email *</label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            placeholder="jane.patel@example.com"
+            autocomplete="email"
+            [class.invalid]="isInvalid('email')" />
+          <small *ngIf="getFieldError('email')">{{ getFieldError('email') }}</small>
+        </div>
+
+        <div class="form-field" *ngIf="!isEditMode">
+          <label for="password">Password *</label>
+          <input
+            id="password"
+            type="password"
+            formControlName="password"
+            autocomplete="new-password"
+            [class.invalid]="isInvalid('password')" />
+          <small *ngIf="getFieldError('password')">{{ getFieldError('password') }}</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <div class="section-title">
+        <h2>Access</h2>
+        <p>Choose at least one role and set whether this account can sign in.</p>
+      </div>
+
+      <div class="roles-grid" [class.invalid]="isInvalid('roles')">
+        <label class="role-option" *ngFor="let role of roles">
+          <input
+            type="checkbox"
+            [checked]="isRoleSelected(role)"
+            (change)="toggleRole(role, $any($event.target).checked)" />
+          <span>{{ role }}</span>
+        </label>
+      </div>
+
+      <small class="roles-error" *ngIf="getFieldError('roles')">{{ getFieldError('roles') }}</small>
+
+      <label class="toggle-row">
+        <input type="checkbox" formControlName="isActive" />
+        <span>Active account</span>
+      </label>
+    </section>
+
+    <div class="form-actions">
+      <a routerLink="/admin/users" class="secondary-action">
+        Cancel
+      </a>
+
+      <button type="submit" class="primary-action" [disabled]="saving">
+        {{ saving ? 'Saving...' : isEditMode ? 'Update User' : 'Create User' }}
+      </button>
+    </div>
+  </form>
+</div>

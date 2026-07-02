@@ -1,0 +1,235 @@
+﻿<div class="site-form-page">
+  <div class="form-header-row">
+    <app-page-header
+      [title]="pageTitle"
+      [subtitle]="pageSubtitle">
+    </app-page-header>
+
+    <a routerLink="/sites" class="back-link">
+      Back to Sites
+    </a>
+  </div>
+
+  <div class="message message--error" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+
+  <div class="loading-card" *ngIf="loading">
+    Loading site...
+  </div>
+
+  <form class="site-form-card" [formGroup]="siteForm" (ngSubmit)="save()" *ngIf="!loading">
+    <section class="form-section">
+      <div class="section-title">
+        <h2>Customer Link</h2>
+        <p>Every site must belong to one customer.</p>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-field form-field--wide">
+          <label for="customerId">Customer *</label>
+          <select
+            id="customerId"
+            formControlName="customerId"
+            [class.invalid]="isInvalid('customerId')"
+            [disabled]="customersLoading">
+            <option value="">
+              {{ customersLoading ? 'Loading customers...' : 'Select customer' }}
+            </option>
+
+            <option
+              *ngFor="let customer of customers; trackBy: trackByCustomer"
+              [value]="customer.id">
+              {{ getCustomerDropdownLabel(customer) }}
+            </option>
+          </select>
+
+          <small *ngIf="getFieldError('customerId')">{{ getFieldError('customerId') }}</small>
+
+          <div class="helper-text" *ngIf="!customersLoading && customers.length === 0">
+            No active customers found. Create a customer before creating a site.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <div class="section-title">
+        <h2>Site Details</h2>
+        <p>Main site identity and classification.</p>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-field form-field--wide">
+          <label for="name">Site name *</label>
+          <input
+            id="name"
+            type="text"
+            formControlName="name"
+            placeholder="Leicester Main Site"
+            [class.invalid]="isInvalid('name')" />
+          <small *ngIf="getFieldError('name')">{{ getFieldError('name') }}</small>
+        </div>
+
+        <div class="form-field">
+          <label for="siteCode">Site code *</label>
+          <input
+            id="siteCode"
+            type="text"
+            formControlName="siteCode"
+            placeholder="LEI-001"
+            [class.invalid]="isInvalid('siteCode')" />
+          <small *ngIf="getFieldError('siteCode')">{{ getFieldError('siteCode') }}</small>
+        </div>
+
+        <div class="form-field">
+          <label for="siteType">Site type *</label>
+          <input
+            id="siteType"
+            type="text"
+            formControlName="siteType"
+            placeholder="Industrial"
+            [class.invalid]="isInvalid('siteType')" />
+          <small *ngIf="getFieldError('siteType')">{{ getFieldError('siteType') }}</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <div class="section-title">
+        <h2>Site Contact</h2>
+        <p>Contact details for the site/location.</p>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="contactPerson">Contact person *</label>
+          <input
+            id="contactPerson"
+            type="text"
+            formControlName="contactPerson"
+            placeholder="John Smith"
+            [class.invalid]="isInvalid('contactPerson')" />
+          <small *ngIf="getFieldError('contactPerson')">{{ getFieldError('contactPerson') }}</small>
+        </div>
+
+        <div class="form-field">
+          <label for="contactEmail">Contact email *</label>
+          <input
+            id="contactEmail"
+            type="email"
+            formControlName="contactEmail"
+            placeholder="john.smith@example.com"
+            [class.invalid]="isInvalid('contactEmail')" />
+          <small *ngIf="getFieldError('contactEmail')">{{ getFieldError('contactEmail') }}</small>
+        </div>
+
+        <div class="form-field">
+          <label for="contactPhone">Contact phone *</label>
+          <input
+            id="contactPhone"
+            type="tel"
+            formControlName="contactPhone"
+            placeholder="07123456789"
+            [class.invalid]="isInvalid('contactPhone')" />
+          <small *ngIf="getFieldError('contactPhone')">{{ getFieldError('contactPhone') }}</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <div class="section-title">
+        <h2>Address</h2>
+        <p>Used for asset location and report context.</p>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="addressLine1">Address line 1 *</label>
+          <input
+            id="addressLine1"
+            type="text"
+            formControlName="addressLine1"
+            placeholder="Unit 5"
+            [class.invalid]="isInvalid('addressLine1')" />
+          <small *ngIf="getFieldError('addressLine1')">{{ getFieldError('addressLine1') }}</small>
+        </div>
+
+        <div class="form-field">
+          <label for="addressLine2">Address line 2</label>
+          <input
+            id="addressLine2"
+            type="text"
+            formControlName="addressLine2"
+            placeholder="Industrial Estate"
+            [class.invalid]="isInvalid('addressLine2')" />
+          <small *ngIf="getFieldError('addressLine2')">{{ getFieldError('addressLine2') }}</small>
+        </div>
+
+        <div class="form-field">
+          <label for="city">City *</label>
+          <input
+            id="city"
+            type="text"
+            formControlName="city"
+            placeholder="Leicester"
+            [class.invalid]="isInvalid('city')" />
+          <small *ngIf="getFieldError('city')">{{ getFieldError('city') }}</small>
+        </div>
+
+        <div class="form-field">
+          <label for="postcode">Postcode *</label>
+          <input
+            id="postcode"
+            type="text"
+            formControlName="postcode"
+            placeholder="LE1 1AA"
+            [class.invalid]="isInvalid('postcode')" />
+          <small *ngIf="getFieldError('postcode')">{{ getFieldError('postcode') }}</small>
+        </div>
+
+        <div class="form-field">
+          <label for="country">Country *</label>
+          <input
+            id="country"
+            type="text"
+            formControlName="country"
+            [class.invalid]="isInvalid('country')" />
+          <small *ngIf="getFieldError('country')">{{ getFieldError('country') }}</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <div class="section-title">
+        <h2>Additional Information</h2>
+        <p>Optional internal note for this site.</p>
+      </div>
+
+      <div class="form-field">
+        <label for="notes">Notes</label>
+        <textarea
+          id="notes"
+          rows="4"
+          formControlName="notes"
+          placeholder="Main electrical testing location"
+          [class.invalid]="isInvalid('notes')">
+        </textarea>
+        <small *ngIf="getFieldError('notes')">{{ getFieldError('notes') }}</small>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <a routerLink="/sites" class="secondary-action">
+        Cancel
+      </a>
+
+      <button
+        type="submit"
+        class="primary-action"
+        [disabled]="saving || (!isEditMode && customers.length === 0)">
+        {{ saving ? 'Saving...' : isEditMode ? 'Update Site' : 'Create Site' }}
+      </button>
+    </div>
+  </form>
+</div>

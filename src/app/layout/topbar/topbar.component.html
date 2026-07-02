@@ -1,0 +1,23 @@
+<header class="topbar">
+  <div class="topbar-title">
+    <span class="brand-mark" aria-hidden="true">VG</span>
+    <span class="brand-copy">
+      <strong>VoltGuard</strong>
+      <span>FieldLink</span>
+    </span>
+  </div>
+
+  <div class="user-area">
+    <div *ngIf="session" class="user-summary">
+      <span class="user-avatar" aria-hidden="true">{{ displayName.charAt(0).toUpperCase() }}</span>
+      <div class="user-copy">
+        <strong>{{ displayName }}</strong>
+        <span *ngIf="displayEmail">{{ displayEmail }}</span>
+      </div>
+    </div>
+
+    <button type="button" class="logout-button" (click)="logout()">
+      Logout
+    </button>
+  </div>
+</header>

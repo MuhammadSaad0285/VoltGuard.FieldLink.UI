@@ -1,0 +1,199 @@
+﻿<div class="customers-page">
+  <div class="customers-header-row">
+    <app-page-header
+      title="Customers"
+      subtitle="Manage customer records, contact details, and customer status">
+    </app-page-header>
+
+    <a *ngIf="canCreate" routerLink="/customers/new" class="primary-action">
+      New Customer
+    </a>
+  </div>
+
+  <section class="toolbar-card">
+    <form class="search-form" (ngSubmit)="applySearch()">
+      <label class="search-label" for="customerSearch">Search customers</label>
+
+      <div class="search-row">
+        <input
+          id="customerSearch"
+          name="customerSearch"
+          type="search"
+          [(ngModel)]="searchTerm"
+          placeholder="Search by name, contact, email, city, postcode..."
+          autocomplete="off" />
+
+        <button type="submit" [disabled]="loading">
+          Search
+        </button>
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="clearSearch()"
+          [disabled]="loading || !searchTerm">
+          Clear
+        </button>
+      </div>
+    </form>
+
+    <div class="page-size-box">
+      <label for="pageSize">Rows</label>
+      <select
+        id="pageSize"
+        [ngModel]="pageSize"
+        (ngModelChange)="changePageSize($event)"
+        name="pageSize">
+        <option *ngFor="let option of pageSizeOptions" [ngValue]="option">
+          {{ option }}
+        </option>
+      </select>
+    </div>
+  </section>
+
+  <div class="message message--success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <div class="message message--error" *ngIf="errorMessage">
+    <span>{{ errorMessage }}</span>
+    <button type="button" (click)="loadCustomers()">Try again</button>
+  </div>
+
+  <div class="loading-card" *ngIf="loading && customers.length === 0">
+    Loading customers...
+  </div>
+
+  <section class="customers-card" *ngIf="customers.length > 0; else emptyCustomers">
+    <div class="table-summary">
+      Showing page {{ pageNumber }} of {{ totalPages }} · {{ totalCount }} customer{{ totalCount === 1 ? '' : 's' }}
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Contact</th>
+            <th>Location</th>
+            <th>Sites</th>
+            <th>Assets</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th class="actions-heading">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let customer of customers; trackBy: trackByCustomer">
+            <td>
+              <div class="main-text">{{ getCustomerName(customer) }}</div>
+              <div class="muted-text">{{ customer.notes || 'No notes' }}</div>
+            </td>
+
+            <td>
+              <div class="main-text">{{ customer.contactPerson || 'No contact person' }}</div>
+              <div class="muted-text">{{ getContactEmail(customer) }}</div>
+              <div class="muted-text">{{ getContactPhone(customer) }}</div>
+            </td>
+
+            <td>{{ getLocation(customer) }}</td>
+
+            <td class="count-cell">{{ getSitesCount(customer) }}</td>
+
+            <td class="count-cell">{{ getAssetsCount(customer) }}</td>
+
+            <td>
+              <span [class]="getStatusClass(customer)">
+                {{ getStatusLabel(customer) }}
+              </span>
+            </td>
+
+            <td>{{ getCreatedDate(customer) }}</td>
+
+            <td class="actions-cell">
+              <div
+                class="action-menu"
+                [class.action-menu--open]="openActionMenuId === customer.id"
+                (click)="keepActionMenuOpen($event)">
+                <button
+                  type="button"
+                  class="action-menu-trigger"
+                  [attr.aria-expanded]="openActionMenuId === customer.id"
+                  (click)="toggleActionMenu(customer, $event)">
+                  Actions
+                </button>
+
+                <div class="action-menu-panel" *ngIf="openActionMenuId === customer.id">
+                  <a
+                    *ngIf="canEdit"
+                    [routerLink]="['/customers', customer.id, 'edit']"
+                    class="action-menu-item"
+                    (click)="closeActionMenu()">
+                    Edit
+                  </a>
+
+                  <button
+                    *ngIf="canDelete"
+                    type="button"
+                    class="action-menu-item action-menu-item--danger"
+                    (click)="deactivateCustomer(customer)"
+                    [disabled]="actionLoadingId === customer.id">
+                    {{ actionLoadingId === customer.id ? 'Working...' : 'Deactivate' }}
+                  </button>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-row">
+      <button
+        type="button"
+        class="page-button"
+        (click)="goToPage(pageNumber - 1)"
+        [disabled]="loading || !hasPreviousPage">
+        Previous
+      </button>
+
+      <div class="page-list">
+        <button
+          type="button"
+          class="page-number"
+          *ngFor="let page of getVisiblePages()"
+          [class.page-number--active]="page === pageNumber"
+          (click)="goToPage(page)"
+          [disabled]="loading">
+          {{ page }}
+        </button>
+      </div>
+
+      <button
+        type="button"
+        class="page-button"
+        (click)="goToPage(pageNumber + 1)"
+        [disabled]="loading || !hasNextPage">
+        Next
+      </button>
+    </div>
+  </section>
+
+  <ng-template #emptyCustomers>
+    <div class="empty-state" *ngIf="!loading">
+      <h2>No customers found</h2>
+      <p *ngIf="searchTerm; else noSearchText">
+        No customer matches your current search.
+      </p>
+
+      <ng-template #noSearchText>
+        <p>Create your first customer to start building the customer → site → asset workflow.</p>
+      </ng-template>
+
+      <a *ngIf="canCreate" routerLink="/customers/new" class="primary-action">
+        Create Customer
+      </a>
+    </div>
+  </ng-template>
+</div>

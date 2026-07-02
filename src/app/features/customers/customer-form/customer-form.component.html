@@ -1,0 +1,167 @@
+﻿<div class="customer-form-page">
+  <div class="form-header-row">
+    <app-page-header
+      [title]="pageTitle"
+      [subtitle]="pageSubtitle">
+    </app-page-header>
+
+    <a routerLink="/customers" class="back-link">
+      Back to Customers
+    </a>
+  </div>
+
+  <div class="message message--error" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+
+  <div class="loading-card" *ngIf="loading">
+    Loading customer...
+  </div>
+
+  <form class="customer-form-card" [formGroup]="customerForm" (ngSubmit)="save()" *ngIf="!loading">
+    <section class="form-section">
+      <div class="section-title">
+        <h2>Customer Details</h2>
+        <p>Main customer and contact information.</p>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-field form-field--wide">
+          <label for="name">Customer name *</label>
+          <input
+            id="name"
+            type="text"
+            formControlName="name"
+            placeholder="ABC Engineering Ltd"
+            [class.invalid]="isInvalid('name')" />
+          <small *ngIf="getFieldError('name')">{{ getFieldError('name') }}</small>
+        </div>
+
+        <div class="form-field">
+          <label for="contactPerson">Contact person *</label>
+          <input
+            id="contactPerson"
+            type="text"
+            formControlName="contactPerson"
+            placeholder="John Smith"
+            [class.invalid]="isInvalid('contactPerson')" />
+          <small *ngIf="getFieldError('contactPerson')">{{ getFieldError('contactPerson') }}</small>
+        </div>
+
+        <div class="form-field">
+          <label for="contactEmail">Contact email *</label>
+          <input
+            id="contactEmail"
+            type="email"
+            formControlName="contactEmail"
+            placeholder="john.smith@example.com"
+            [class.invalid]="isInvalid('contactEmail')" />
+          <small *ngIf="getFieldError('contactEmail')">{{ getFieldError('contactEmail') }}</small>
+        </div>
+
+        <div class="form-field">
+          <label for="contactPhone">Contact phone *</label>
+          <input
+            id="contactPhone"
+            type="tel"
+            formControlName="contactPhone"
+            placeholder="07123456789"
+            [class.invalid]="isInvalid('contactPhone')" />
+          <small *ngIf="getFieldError('contactPhone')">{{ getFieldError('contactPhone') }}</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <div class="section-title">
+        <h2>Address</h2>
+        <p>Used for site and report context.</p>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="addressLine1">Address line 1 *</label>
+          <input
+            id="addressLine1"
+            type="text"
+            formControlName="addressLine1"
+            placeholder="Unit 5"
+            [class.invalid]="isInvalid('addressLine1')" />
+          <small *ngIf="getFieldError('addressLine1')">{{ getFieldError('addressLine1') }}</small>
+        </div>
+
+        <div class="form-field">
+          <label for="addressLine2">Address line 2</label>
+          <input
+            id="addressLine2"
+            type="text"
+            formControlName="addressLine2"
+            placeholder="Industrial Estate"
+            [class.invalid]="isInvalid('addressLine2')" />
+          <small *ngIf="getFieldError('addressLine2')">{{ getFieldError('addressLine2') }}</small>
+        </div>
+
+        <div class="form-field">
+          <label for="city">City *</label>
+          <input
+            id="city"
+            type="text"
+            formControlName="city"
+            placeholder="Leicester"
+            [class.invalid]="isInvalid('city')" />
+          <small *ngIf="getFieldError('city')">{{ getFieldError('city') }}</small>
+        </div>
+
+        <div class="form-field">
+          <label for="postcode">Postcode *</label>
+          <input
+            id="postcode"
+            type="text"
+            formControlName="postcode"
+            placeholder="LE1 1AA"
+            [class.invalid]="isInvalid('postcode')" />
+          <small *ngIf="getFieldError('postcode')">{{ getFieldError('postcode') }}</small>
+        </div>
+
+        <div class="form-field">
+          <label for="country">Country *</label>
+          <input
+            id="country"
+            type="text"
+            formControlName="country"
+            [class.invalid]="isInvalid('country')" />
+          <small *ngIf="getFieldError('country')">{{ getFieldError('country') }}</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <div class="section-title">
+        <h2>Additional Information</h2>
+        <p>Optional internal note for the customer record.</p>
+      </div>
+
+      <div class="form-field">
+        <label for="notes">Notes</label>
+        <textarea
+          id="notes"
+          rows="4"
+          formControlName="notes"
+          placeholder="Main electrical testing customer"
+          [class.invalid]="isInvalid('notes')">
+        </textarea>
+        <small *ngIf="getFieldError('notes')">{{ getFieldError('notes') }}</small>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <a routerLink="/customers" class="secondary-action">
+        Cancel
+      </a>
+
+      <button type="submit" class="primary-action" [disabled]="saving">
+        {{ saving ? 'Saving...' : isEditMode ? 'Update Customer' : 'Create Customer' }}
+      </button>
+    </div>
+  </form>
+</div>

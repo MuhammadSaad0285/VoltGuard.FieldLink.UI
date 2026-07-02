@@ -1,0 +1,191 @@
+<div class="admin-users-page">
+  <div class="users-header-row">
+    <app-page-header
+      title="User Management"
+      subtitle="Manage workspace users, roles, account status, and password resets">
+    </app-page-header>
+
+    <a routerLink="/admin/users/new" class="primary-action">
+      New User
+    </a>
+  </div>
+
+  <section class="toolbar-card">
+    <form class="search-form" (ngSubmit)="applyFilters()">
+      <label class="search-label" for="userSearch">Search users</label>
+
+      <div class="search-row">
+        <input
+          id="userSearch"
+          name="userSearch"
+          type="search"
+          [(ngModel)]="searchTerm"
+          placeholder="Search by name, username, or email"
+          autocomplete="off" />
+
+        <select name="selectedRole" [(ngModel)]="selectedRole" aria-label="Filter by role">
+          <option value="">All roles</option>
+          <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
+        </select>
+
+        <select name="activeFilter" [(ngModel)]="activeFilter" aria-label="Filter by status">
+          <option value="all">All statuses</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+
+        <button type="submit" [disabled]="loading">
+          Search
+        </button>
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="clearFilters()"
+          [disabled]="loading || (!searchTerm && !selectedRole && activeFilter === 'all')">
+          Clear
+        </button>
+      </div>
+    </form>
+
+    <div class="page-size-box">
+      <label for="pageSize">Rows</label>
+      <select
+        id="pageSize"
+        [ngModel]="pageSize"
+        (ngModelChange)="changePageSize($event)"
+        name="pageSize">
+        <option *ngFor="let option of pageSizeOptions" [ngValue]="option">
+          {{ option }}
+        </option>
+      </select>
+    </div>
+  </section>
+
+  <div class="message message--success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <div class="message message--error" *ngIf="errorMessage">
+    <span>{{ errorMessage }}</span>
+    <button type="button" (click)="loadUsers()">Try again</button>
+  </div>
+
+  <div class="loading-card" *ngIf="loading && users.length === 0">
+    Loading users...
+  </div>
+
+  <section class="users-card" *ngIf="users.length > 0; else emptyUsers">
+    <div class="table-summary">
+      Showing page {{ pageNumber }} of {{ totalPages }} · {{ totalCount }} user{{ totalCount === 1 ? '' : 's' }}
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Roles</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Last Login</th>
+            <th class="actions-heading">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let user of users; trackBy: trackByUser">
+            <td>
+              <div class="main-text">{{ getDisplayName(user) }}</div>
+              <div class="muted-text">{{ user.email }}</div>
+              <div class="muted-text" *ngIf="user.userName && user.userName !== user.email">
+                {{ user.userName }}
+              </div>
+            </td>
+
+            <td>{{ getRolesLabel(user) }}</td>
+
+            <td>
+              <span [class]="getStatusClass(user)">
+                {{ getStatusLabel(user) }}
+              </span>
+            </td>
+
+            <td>{{ getCreatedDate(user) }}</td>
+
+            <td>{{ getLastLoginDate(user) }}</td>
+
+            <td class="actions-cell">
+              <a [routerLink]="['/admin/users', user.id, 'edit']" class="action-link">
+                Edit
+              </a>
+
+              <button
+                type="button"
+                class="action-link"
+                (click)="resetPassword(user)"
+                [disabled]="actionLoadingId === user.id">
+                Reset Password
+              </button>
+
+              <button
+                type="button"
+                [class]="user.isActive ? 'danger-link' : 'success-link'"
+                (click)="user.isActive ? deactivateUser(user) : activateUser(user)"
+                [disabled]="actionLoadingId === user.id">
+                {{ actionLoadingId === user.id ? 'Working...' : user.isActive ? 'Deactivate' : 'Activate' }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-row">
+      <button
+        type="button"
+        class="page-button"
+        (click)="goToPage(pageNumber - 1)"
+        [disabled]="loading || !hasPreviousPage">
+        Previous
+      </button>
+
+      <div class="page-list">
+        <button
+          type="button"
+          class="page-number"
+          *ngFor="let page of getVisiblePages()"
+          [class.page-number--active]="page === pageNumber"
+          (click)="goToPage(page)"
+          [disabled]="loading">
+          {{ page }}
+        </button>
+      </div>
+
+      <button
+        type="button"
+        class="page-button"
+        (click)="goToPage(pageNumber + 1)"
+        [disabled]="loading || !hasNextPage">
+        Next
+      </button>
+    </div>
+  </section>
+
+  <ng-template #emptyUsers>
+    <div class="empty-state" *ngIf="!loading">
+      <h2>No users found</h2>
+      <p *ngIf="searchTerm || selectedRole || activeFilter !== 'all'; else noFiltersText">
+        No user matches the current filters.
+      </p>
+
+      <ng-template #noFiltersText>
+        <p>Create the first workspace user to assign access and roles.</p>
+      </ng-template>
+
+      <a routerLink="/admin/users/new" class="primary-action">
+        Create User
+      </a>
+    </div>
+  </ng-template>
+</div>

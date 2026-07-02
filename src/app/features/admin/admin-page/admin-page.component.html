@@ -1,0 +1,23 @@
+<section class="admin-page">
+  <app-page-header
+    title="Admin"
+    subtitle="Manage users and review system activity.">
+  </app-page-header>
+
+  <div class="admin-hero page-card">
+    <div>
+      <h2>Workspace management</h2>
+      <p>Manage users and review system activity.</p>
+    </div>
+  </div>
+
+  <div class="admin-grid">
+    <article class="admin-card page-card" *ngFor="let card of cards">
+      <h3>{{ card.title }}</h3>
+      <p>{{ card.description }}</p>
+      <a *ngIf="card.route" [routerLink]="card.route" class="card-link">
+        Open
+      </a>
+    </article>
+  </div>
+</section>

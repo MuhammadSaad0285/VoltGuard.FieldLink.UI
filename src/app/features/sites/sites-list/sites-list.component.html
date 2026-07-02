@@ -1,0 +1,215 @@
+﻿<div class="sites-page">
+  <div class="sites-header-row">
+    <app-page-header
+      title="Sites"
+      subtitle="Manage customer sites and locations before adding electrical assets">
+    </app-page-header>
+
+    <a *ngIf="canCreate" routerLink="/sites/new" class="primary-action">
+      New Site
+    </a>
+  </div>
+
+  <section class="toolbar-card">
+    <form class="search-form" (ngSubmit)="applySearch()">
+      <label class="search-label" for="siteSearch">Search sites</label>
+
+      <div class="search-row">
+        <input
+          id="siteSearch"
+          name="siteSearch"
+          type="search"
+          [(ngModel)]="searchTerm"
+          placeholder="Search by site name, code, city, postcode..."
+          autocomplete="off" />
+
+        <select
+          name="selectedCustomerId"
+          [ngModel]="selectedCustomerId"
+          (ngModelChange)="filterByCustomer($event)"
+          [disabled]="customersLoading">
+          <option value="">All customers</option>
+          <option
+            *ngFor="let customer of customers; trackBy: trackByCustomer"
+            [value]="customer.id">
+            {{ getCustomerDropdownLabel(customer) }}
+          </option>
+        </select>
+
+        <button type="submit" [disabled]="loading">
+          Search
+        </button>
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="clearSearch()"
+          [disabled]="loading || (!searchTerm && !selectedCustomerId)">
+          Clear
+        </button>
+      </div>
+    </form>
+
+    <div class="page-size-box">
+      <label for="pageSize">Rows</label>
+      <select
+        id="pageSize"
+        [ngModel]="pageSize"
+        (ngModelChange)="changePageSize($event)"
+        name="pageSize">
+        <option *ngFor="let option of pageSizeOptions" [ngValue]="option">
+          {{ option }}
+        </option>
+      </select>
+    </div>
+  </section>
+
+  <div class="message message--success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <div class="message message--error" *ngIf="errorMessage">
+    <span>{{ errorMessage }}</span>
+    <button type="button" (click)="loadSites()">Try again</button>
+  </div>
+
+  <div class="loading-card" *ngIf="loading && sites.length === 0">
+    Loading sites...
+  </div>
+
+  <section class="sites-card" *ngIf="sites.length > 0; else emptySites">
+    <div class="table-summary">
+      Showing page {{ pageNumber }} of {{ totalPages }} · {{ totalCount }} site{{ totalCount === 1 ? '' : 's' }}
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Site</th>
+            <th>Customer</th>
+            <th>Contact</th>
+            <th>Location</th>
+            <th>Assets</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th class="actions-heading">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let site of sites; trackBy: trackBySite">
+            <td>
+              <div class="main-text">{{ getSiteName(site) }}</div>
+              <div class="muted-text">{{ getSiteCode(site) }} · {{ getSiteType(site) }}</div>
+            </td>
+
+            <td>
+              <div class="main-text">{{ getCustomerName(site) }}</div>
+              <div class="muted-text">Customer-linked site</div>
+            </td>
+
+            <td>
+              <div class="main-text">{{ site.contactPerson || 'No contact person' }}</div>
+              <div class="muted-text">{{ getContactEmail(site) }}</div>
+              <div class="muted-text">{{ getContactPhone(site) }}</div>
+            </td>
+
+            <td>{{ getLocation(site) }}</td>
+
+            <td class="count-cell">{{ getAssetsCount(site) }}</td>
+
+            <td>
+              <span [class]="getStatusClass(site)">
+                {{ getStatusLabel(site) }}
+              </span>
+            </td>
+
+            <td>{{ getCreatedDate(site) }}</td>
+
+            <td class="actions-cell">
+              <div
+                class="action-menu"
+                [class.action-menu--open]="openActionMenuId === site.id"
+                (click)="keepActionMenuOpen($event)">
+                <button
+                  type="button"
+                  class="action-menu-trigger"
+                  [attr.aria-expanded]="openActionMenuId === site.id"
+                  (click)="toggleActionMenu(site, $event)">
+                  Actions
+                </button>
+
+                <div class="action-menu-panel" *ngIf="openActionMenuId === site.id">
+                  <a
+                    *ngIf="canEdit"
+                    [routerLink]="['/sites', site.id, 'edit']"
+                    class="action-menu-item"
+                    (click)="closeActionMenu()">
+                    Edit
+                  </a>
+
+                  <button
+                    *ngIf="canDelete"
+                    type="button"
+                    class="action-menu-item action-menu-item--danger"
+                    (click)="deactivateSite(site)"
+                    [disabled]="actionLoadingId === site.id">
+                    {{ actionLoadingId === site.id ? 'Working...' : 'Deactivate' }}
+                  </button>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-row">
+      <button
+        type="button"
+        class="page-button"
+        (click)="goToPage(pageNumber - 1)"
+        [disabled]="loading || !hasPreviousPage">
+        Previous
+      </button>
+
+      <div class="page-list">
+        <button
+          type="button"
+          class="page-number"
+          *ngFor="let page of getVisiblePages()"
+          [class.page-number--active]="page === pageNumber"
+          (click)="goToPage(page)"
+          [disabled]="loading">
+          {{ page }}
+        </button>
+      </div>
+
+      <button
+        type="button"
+        class="page-button"
+        (click)="goToPage(pageNumber + 1)"
+        [disabled]="loading || !hasNextPage">
+        Next
+      </button>
+    </div>
+  </section>
+
+  <ng-template #emptySites>
+    <div class="empty-state" *ngIf="!loading">
+      <h2>No sites found</h2>
+      <p *ngIf="searchTerm || selectedCustomerId; else noSearchText">
+        No site matches your current search/filter.
+      </p>
+
+      <ng-template #noSearchText>
+        <p>Create your first site. Every site must be linked to one customer.</p>
+      </ng-template>
+
+      <a *ngIf="canCreate" routerLink="/sites/new" class="primary-action">
+        Create Site
+      </a>
+    </div>
+  </ng-template>
+</div>

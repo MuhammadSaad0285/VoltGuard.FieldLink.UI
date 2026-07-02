@@ -1,0 +1,242 @@
+﻿* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #111827;
+  background: #f4f6f8;
+}
+
+a {
+  color: #2563eb;
+}
+
+.action-link {
+  display: inline-flex;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 18px;
+  border: 1px solid #e5e7eb;
+}
+
+.page-card,
+.table-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+}
+
+.page-card {
+  padding: 18px;
+}
+
+.table-card {
+  overflow: hidden;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.badge-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge-critical {
+  background: #7f1d1d;
+  color: #ffffff;
+}
+
+.badge-muted {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.empty-state,
+.loading-state,
+.error-state {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 1rem;
+  color: #4b5563;
+}
+
+.empty-state {
+  text-align: center;
+}
+
+.empty-state h2,
+.empty-state h3 {
+  margin: 0 0 0.4rem;
+  color: #111827;
+}
+
+.empty-state p {
+  margin: 0 auto 1rem;
+  max-width: 560px;
+  color: #6b7280;
+}
+
+.loading-state {
+  color: #4b5563;
+}
+
+.error-state {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 0;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  background: #2563eb;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 800;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.action-button:hover {
+  background: #1d4ed8;
+}
+
+.action-button:disabled,
+.action-button[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.action-menu {
+  margin-left: auto;
+  position: relative;
+  width: max-content;
+}
+
+.action-menu-trigger {
+  align-items: center;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.7rem;
+  color: #0f172a;
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 800;
+  gap: 0.5rem;
+  justify-content: space-between;
+  min-height: 2.35rem;
+  min-width: 7.4rem;
+  padding: 0.55rem 0.75rem;
+  transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.action-menu-trigger:hover,
+.action-menu--open .action-menu-trigger {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+.action-menu-trigger:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+.action-menu-trigger::after {
+  border-left: 0.25rem solid transparent;
+  border-right: 0.25rem solid transparent;
+  border-top: 0.3rem solid currentColor;
+  content: '';
+  height: 0;
+  width: 0;
+}
+
+.action-menu-trigger::-webkit-details-marker {
+  display: none;
+}
+
+.action-menu-panel {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.14);
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+  min-width: 10.5rem;
+  padding: 0.35rem;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 5;
+}
+
+.action-menu-item {
+  background: transparent;
+  border: 0;
+  border-radius: 0.55rem;
+  color: #0f172a;
+  cursor: pointer;
+  display: block;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 800;
+  padding: 0.6rem 0.7rem;
+  text-align: left;
+  text-decoration: none;
+  width: 100%;
+}
+
+.action-menu-item:hover,
+.action-menu-item:focus-visible {
+  background: #f1f5f9;
+  outline: 0;
+}
+
+.action-menu-item--danger {
+  color: #b91c1c;
+}
+
+.action-menu-item--danger:hover,
+.action-menu-item--danger:focus-visible {
+  background: #fef2f2;
+}
