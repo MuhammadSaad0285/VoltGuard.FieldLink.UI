@@ -45,7 +45,6 @@ export interface RecentFailedTest {
   overallStatus?: string;
 
   riskLevel?: string;
-  assetRiskLevel?: string;
 
   engineerName?: string;
   testDateUtc?: string;
@@ -66,7 +65,6 @@ export interface AssetDueForRetest {
   siteName?: string;
 
   riskLevel?: string;
-  assetRiskLevel?: string;
 
   lastTestDateUtc?: string;
   lastTestedAtUtc?: string;

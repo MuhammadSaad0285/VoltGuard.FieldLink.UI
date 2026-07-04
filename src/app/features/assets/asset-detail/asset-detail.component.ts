@@ -151,16 +151,7 @@ export class AssetDetailComponent implements OnInit {
   }
 
   getRiskLevel(asset: AssetDetails): string {
-    return (
-      this.readValue(
-        asset,
-        'latestRiskLevel',
-        'currentRiskLevel',
-        'riskLevel',
-        'assetRiskLevel',
-        'calculatedRiskLevel'
-      ) || 'Unknown'
-    );
+    return asset.riskLevel ?? 'Unknown';
   }
 
   getRiskClass(asset: AssetDetails): string {

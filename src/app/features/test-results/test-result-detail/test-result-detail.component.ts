@@ -207,7 +207,7 @@ export class TestResultDetailComponent implements OnInit {
   }
 
   getRiskLevel(result: TestResultDetails): string {
-    return result.riskLevel ?? result.assetRiskLevel ?? result.calculatedRiskLevel ?? 'Unknown';
+    return result.riskLevel ?? result.calculatedRiskLevel ?? 'Unknown';
   }
 
   getFollowUpPriority(result: TestResultDetails): string {

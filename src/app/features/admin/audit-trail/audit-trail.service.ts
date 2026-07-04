@@ -43,11 +43,15 @@ export class AuditTrailService {
     }
 
     if (fromUtc) {
-      httpParams = httpParams.set('fromUtc', fromUtc);
+      httpParams = httpParams
+        .set('fromUtc', fromUtc)
+        .set('fromDateUtc', fromUtc);
     }
 
     if (toUtc) {
-      httpParams = httpParams.set('toUtc', toUtc);
+      httpParams = httpParams
+        .set('toUtc', toUtc)
+        .set('toDateUtc', toUtc);
     }
 
     if (search) {
@@ -84,10 +88,12 @@ export class AuditTrailService {
       count?: number;
     };
 
-    const items = raw.items ?? raw.data ?? raw.results ?? [];
+    const rawItems = raw.items ?? raw.data ?? raw.results ?? [];
+    const items = this.dedupeAuditLogs(rawItems);
     const pageNumber = raw.pageNumber ?? raw.currentPage ?? requestedParams.pageNumber;
     const pageSize = raw.pageSize ?? requestedParams.pageSize;
-    const totalCount = raw.totalCount ?? raw.count ?? items.length;
+    const rawTotalCount = raw.totalCount ?? raw.count ?? rawItems.length;
+    const totalCount = Math.max(items.length, rawTotalCount - (rawItems.length - items.length));
     const totalPages = raw.totalPages ?? Math.max(1, Math.ceil(totalCount / Math.max(1, pageSize)));
 
     return {
@@ -99,5 +105,28 @@ export class AuditTrailService {
       hasPreviousPage: raw.hasPreviousPage ?? pageNumber > 1,
       hasNextPage: raw.hasNextPage ?? pageNumber < totalPages
     };
+  }
+
+  private dedupeAuditLogs(items: AuditLogItem[]): AuditLogItem[] {
+    const seen = new Set<string>();
+
+    return items.filter((item) => {
+      const key = [
+        item.correlationId || item.id,
+        item.actorUserId || item.actorEmail || 'system',
+        item.action,
+        item.entityType,
+        item.entityId,
+        item.oldValuesJson || '',
+        item.newValuesJson || ''
+      ].join('|');
+
+      if (seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    });
   }
 }

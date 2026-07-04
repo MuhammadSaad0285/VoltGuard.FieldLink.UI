@@ -43,7 +43,6 @@ export class AdminUsersListComponent implements OnInit {
   successMessage = '';
 
   ngOnInit(): void {
-    this.loadRoles();
     this.loadUsers();
   }
 
@@ -188,14 +187,6 @@ export class AdminUsersListComponent implements OnInit {
     return user.id;
   }
 
-  private loadRoles(): void {
-    this.adminUsersService.getRoles().subscribe({
-      next: (roles) => {
-        this.roles = roles;
-      }
-    });
-  }
-
   private runStatusAction(user: AdminUserListItem, activate: boolean): void {
     const action = activate ? 'activate' : 'deactivate';
     const confirmed = window.confirm(`${activate ? 'Activate' : 'Deactivate'} ${this.getDisplayName(user)}?`);
@@ -228,7 +219,7 @@ export class AdminUsersListComponent implements OnInit {
     this.pageNumber = result.pageNumber ?? this.pageNumber;
     this.pageSize = result.pageSize ?? this.pageSize;
     this.totalCount = result.totalCount ?? this.users.length;
-    this.totalPages = Math.max(1, result.totalPages ?? 1);
+    this.totalPages = result.totalPages ?? this.totalPages;
     this.hasPreviousPage = result.hasPreviousPage ?? this.pageNumber > 1;
     this.hasNextPage = result.hasNextPage ?? this.pageNumber < this.totalPages;
   }

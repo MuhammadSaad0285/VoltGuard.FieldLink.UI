@@ -61,7 +61,6 @@ export class AdminUserFormComponent implements OnInit {
   ngOnInit(): void {
     this.userId = this.route.snapshot.paramMap.get('id') ?? '';
     this.configurePasswordValidators();
-    this.loadRoles();
 
     if (this.userId) {
       this.loadUser(this.userId);
@@ -161,14 +160,6 @@ export class AdminUserFormComponent implements OnInit {
     }
 
     passwordControl.updateValueAndValidity();
-  }
-
-  private loadRoles(): void {
-    this.adminUsersService.getRoles().subscribe({
-      next: (roles) => {
-        this.roles = roles;
-      }
-    });
   }
 
   private loadUser(id: string): void {

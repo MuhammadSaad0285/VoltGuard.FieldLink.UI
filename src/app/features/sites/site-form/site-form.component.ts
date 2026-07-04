@@ -138,10 +138,16 @@ export class SiteFormComponent implements OnInit {
 
   private loadCustomers(): void {
     this.customersLoading = true;
+    this.siteForm.controls.customerId.disable({ emitEvent: false });
 
     this.sitesService
       .getCustomersForDropdown()
-      .pipe(finalize(() => (this.customersLoading = false)))
+      .pipe(
+        finalize(() => {
+          this.customersLoading = false;
+          this.siteForm.controls.customerId.enable({ emitEvent: false });
+        })
+      )
       .subscribe({
         next: (customers) => {
           this.customers = customers;

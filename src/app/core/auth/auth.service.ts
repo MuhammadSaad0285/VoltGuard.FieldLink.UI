@@ -2,7 +2,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, of } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { catchError, finalize, map, shareReplay, tap } from 'rxjs/operators';
 import {
   CurrentUserResponse,
   LoginRequest,
@@ -16,10 +16,13 @@ import { StorageService } from '../services/storage.service';
   providedIn: 'root'
 })
 export class AuthService {
+  private readonly sessionValidationTtlMs = 60_000;
   private readonly http = inject(HttpClient);
   private readonly apiUrl = inject(ApiUrlService);
   private readonly storage = inject(StorageService);
   private readonly router = inject(Router);
+  private lastSessionValidatedAt = 0;
+  private refreshRequest$: Observable<UserSession | null> | null = null;
 
   login(request: LoginRequest): Observable<UserSession> {
     return this.http.post<LoginResponse>(this.apiUrl.url('/auth/login'), request).pipe(
@@ -39,21 +42,44 @@ export class AuthService {
       return of(null);
     }
 
-    return this.me().pipe(
+    if (this.isSessionExpired(existingSession)) {
+      this.storage.clearSession();
+      this.lastSessionValidatedAt = 0;
+      return of(null);
+    }
+
+    if (Date.now() - this.lastSessionValidatedAt < this.sessionValidationTtlMs) {
+      return of(existingSession);
+    }
+
+    if (this.refreshRequest$) {
+      return this.refreshRequest$;
+    }
+
+    this.refreshRequest$ = this.me().pipe(
       map(currentUser => {
         const updatedSession = this.createSessionFromCurrentUser(existingSession, currentUser);
         this.storage.setSession(updatedSession);
+        this.lastSessionValidatedAt = Date.now();
         return updatedSession;
       }),
       catchError(() => {
         this.storage.clearSession();
+        this.lastSessionValidatedAt = 0;
         return of(null);
-      })
+      }),
+      finalize(() => {
+        this.refreshRequest$ = null;
+      }),
+      shareReplay({ bufferSize: 1, refCount: false })
     );
+
+    return this.refreshRequest$;
   }
 
   logout(redirectToLogin = true): void {
     this.storage.clearSession();
+    this.lastSessionValidatedAt = 0;
 
     if (redirectToLogin) {
       this.router.navigate(['/login']);
@@ -61,7 +87,15 @@ export class AuthService {
   }
 
   getSession(): UserSession | null {
-    return this.storage.getSession();
+    const session = this.storage.getSession();
+
+    if (session && this.isSessionExpired(session)) {
+      this.storage.clearSession();
+      this.lastSessionValidatedAt = 0;
+      return null;
+    }
+
+    return session;
   }
 
   getAccessToken(): string | null {
@@ -69,7 +103,7 @@ export class AuthService {
   }
 
   isLoggedIn(): boolean {
-    return !!this.getAccessToken();
+    return !!this.getSession()?.accessToken;
   }
 
   hasRole(role: string): boolean {
@@ -146,7 +180,7 @@ export class AuthService {
       email,
       fullName,
       roles,
-      expiresAtUtc: response.expiresAtUtc ?? response.expiresAt
+      expiresAtUtc: response.expiresAtUtc ?? response.expiresAt ?? this.readJwtExpiry(token) ?? undefined
     };
   }
 
@@ -166,8 +200,29 @@ export class AuthService {
         existingSession.fullName ??
         currentUser.email ??
         existingSession.email,
-      roles: roles.length > 0 ? roles : existingSession.roles
+      roles: roles.length > 0 ? roles : existingSession.roles,
+      expiresAtUtc: existingSession.expiresAtUtc ?? this.readJwtExpiry(existingSession.accessToken) ?? undefined
     };
+  }
+
+  private isSessionExpired(session: UserSession): boolean {
+    const expiresAtUtc = session.expiresAtUtc ?? this.readJwtExpiry(session.accessToken);
+
+    if (!expiresAtUtc) {
+      return false;
+    }
+
+    const expiresAt = new Date(expiresAtUtc).getTime();
+    return Number.isFinite(expiresAt) && expiresAt <= Date.now();
+  }
+
+  private readJwtExpiry(token: string): string | null {
+    const payload = this.decodeJwtPayload(token);
+    const expiry = payload?.['exp'];
+
+    return typeof expiry === 'number'
+      ? new Date(expiry * 1000).toISOString()
+      : null;
   }
 
   private normaliseRoles(value: string | string[] | undefined | null): string[] {

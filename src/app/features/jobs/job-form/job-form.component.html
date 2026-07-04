@@ -36,8 +36,7 @@
           <span>Customer</span>
           <select
             formControlName="customerId"
-            (change)="onCustomerChange()"
-            [disabled]="customersLoading || saving || isLocked">
+            (change)="onCustomerChange()">
             <option value="">All customers</option>
             <option *ngFor="let customer of customers" [value]="customer.id">
               {{ getCustomerDropdownLabel(customer) }}
@@ -49,8 +48,7 @@
           <span>Site</span>
           <select
             formControlName="siteId"
-            (change)="onSiteChange()"
-            [disabled]="!form.controls.customerId.value || sitesLoading || saving || isLocked">
+            (change)="onSiteChange()">
             <option value="">
               {{ form.controls.customerId.value ? 'All sites' : 'Select customer first' }}
             </option>
@@ -62,7 +60,7 @@
 
         <label class="form-field form-field--full">
           <span>Asset <strong>*</strong></span>
-          <select formControlName="assetId" [disabled]="assetsLoading || saving || isLocked">
+          <select formControlName="assetId">
             <option value="">Select asset</option>
             <option *ngFor="let asset of assets" [value]="asset.id">
               {{ getAssetDropdownLabel(asset) }}
@@ -129,7 +127,7 @@
       <div class="form-grid">
         <label class="form-field">
           <span>Assigned To</span>
-          <select formControlName="assignedToUserId" [disabled]="engineersLoading || saving || isLocked">
+          <select formControlName="assignedToUserId">
             <option value="">Unassigned</option>
             <option *ngFor="let engineer of engineers" [value]="engineer.id">
               {{ getEngineerDropdownLabel(engineer) }}

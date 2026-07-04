@@ -30,7 +30,6 @@
   overallStatus?: string;
 
   riskLevel?: string;
-  assetRiskLevel?: string;
   calculatedRiskLevel?: string;
 
   measurementsCount?: number;
@@ -143,9 +142,7 @@ export interface AssetDropdownItem {
   locationDescription?: string;
   location?: string;
 
-  currentRiskLevel?: string;
   riskLevel?: string;
-  assetRiskLevel?: string;
 
   isActive?: boolean;
 }

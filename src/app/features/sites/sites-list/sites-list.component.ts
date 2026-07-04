@@ -269,7 +269,7 @@ export class SitesListComponent implements OnInit {
     this.pageNumber = result.pageNumber ?? this.pageNumber;
     this.pageSize = result.pageSize ?? this.pageSize;
     this.totalCount = result.totalCount ?? this.sites.length;
-    this.totalPages = Math.max(1, result.totalPages ?? 1);
+    this.totalPages = result.totalPages ?? this.totalPages;
     this.hasPreviousPage = result.hasPreviousPage ?? this.pageNumber > 1;
     this.hasNextPage = result.hasNextPage ?? this.pageNumber < this.totalPages;
   }

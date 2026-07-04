@@ -13,6 +13,7 @@ import {
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { getApiErrorMessage } from '../../../core/models/api-error.model';
 import { PageHeaderComponent } from '../../../layout/page-header/page-header.component';
 import {
   AssetDropdownItem,
@@ -167,11 +168,17 @@ export class TestResultFormComponent implements OnInit, OnDestroy {
 
   loadAssets(customerId?: string, siteId?: string, keepSelectedAsset = false): void {
     this.loadingAssets = true;
+    this.syncFormDisabledState();
     const currentAssetId = this.form.get('assetId')?.value;
 
     this.testResultsService
       .getAssetsForDropdown(customerId, siteId)
-      .pipe(finalize(() => (this.loadingAssets = false)))
+      .pipe(
+        finalize(() => {
+          this.loadingAssets = false;
+          this.syncFormDisabledState();
+        })
+      )
       .subscribe({
         next: (assets) => {
           this.assets = assets;
@@ -188,10 +195,16 @@ export class TestResultFormComponent implements OnInit, OnDestroy {
 
   loadEngineers(): void {
     this.loadingEngineers = true;
+    this.syncFormDisabledState();
 
     this.testResultsService
       .getEngineersForDropdown()
-      .pipe(finalize(() => (this.loadingEngineers = false)))
+      .pipe(
+        finalize(() => {
+          this.loadingEngineers = false;
+          this.syncFormDisabledState();
+        })
+      )
       .subscribe({
         next: (engineers) => {
           this.engineers = engineers;
@@ -204,11 +217,17 @@ export class TestResultFormComponent implements OnInit, OnDestroy {
 
   loadTestResult(): void {
     this.loadingDetails = true;
+    this.syncFormDisabledState();
     this.errorMessage = '';
 
     this.testResultsService
       .getTestResult(this.testResultId)
-      .pipe(finalize(() => (this.loadingDetails = false)))
+      .pipe(
+        finalize(() => {
+          this.loadingDetails = false;
+          this.syncFormDisabledState();
+        })
+      )
       .subscribe({
         next: (result) => {
           this.patchForm(result);
@@ -248,6 +267,7 @@ export class TestResultFormComponent implements OnInit, OnDestroy {
 
   addMeasurement(measurement?: TestResultMeasurement): void {
     this.measurements.push(this.createMeasurementGroup(measurement));
+    this.syncFormDisabledState();
   }
 
   addCommonMeasurementRows(): void {
@@ -332,7 +352,7 @@ export class TestResultFormComponent implements OnInit, OnDestroy {
         error: (error) => {
           this.stopAiDraftTyping();
           this.aiDraftOpen = false;
-          this.errorMessage = this.getApiErrorMessage(error, 'AI notes could not be generated. Please try again.');
+          this.errorMessage = getApiErrorMessage(error, 'AI notes could not be generated. Please try again.');
         }
       });
   }
@@ -393,13 +413,19 @@ export class TestResultFormComponent implements OnInit, OnDestroy {
     }
 
     this.saving = true;
+    this.syncFormDisabledState();
 
     const saveRequest = this.isEditMode
       ? this.testResultsService.updateTestResult(this.testResultId, request)
       : this.testResultsService.createTestResult(request);
 
     saveRequest
-      .pipe(finalize(() => (this.saving = false)))
+      .pipe(
+        finalize(() => {
+          this.saving = false;
+          this.syncFormDisabledState();
+        })
+      )
       .subscribe({
         next: (saved) => {
           const savedResult = saved as TestResultDetails | undefined;
@@ -417,7 +443,7 @@ export class TestResultFormComponent implements OnInit, OnDestroy {
           this.router.navigate(['/test-results']);
         },
         error: (error) => {
-          this.errorMessage = this.getApiErrorMessage(
+          this.errorMessage = getApiErrorMessage(
             error,
             'Test result could not be saved. Please check the highlighted fields and try again.'
           );
@@ -616,7 +642,7 @@ export class TestResultFormComponent implements OnInit, OnDestroy {
 
   private patchForm(result: TestResultDetails): void {
     this.calculatedStatus = result.status ?? result.resultStatus ?? result.overallStatus ?? '';
-    this.calculatedRisk = result.riskLevel ?? result.assetRiskLevel ?? result.calculatedRiskLevel ?? '';
+    this.calculatedRisk = result.riskLevel ?? result.calculatedRiskLevel ?? '';
 
     this.selectedCustomerId = result.customerId ?? '';
     this.selectedSiteId = result.siteId ?? '';
@@ -735,6 +761,43 @@ export class TestResultFormComponent implements OnInit, OnDestroy {
     });
   }
 
+  private syncFormDisabledState(): void {
+    const isFormBusy = this.saving || this.loadingDetails;
+    const measurementControlNames = ['measurementName', 'value', 'unit', 'expectedMin', 'expectedMax', 'notes'];
+
+    this.setControlDisabled('assetId', isFormBusy || this.loadingAssets);
+    this.setControlDisabled('testReference', isFormBusy);
+    this.setControlDisabled('testType', isFormBusy);
+    this.setControlDisabled('testDateUtc', isFormBusy);
+    this.setControlDisabled('engineerName', isFormBusy || this.loadingEngineers);
+    this.setControlDisabled('notes', isFormBusy);
+
+    this.measurements.controls.forEach((control) => {
+      const group = control as UntypedFormGroup;
+
+      measurementControlNames.forEach((controlName) => {
+        this.setAbstractControlDisabled(group.get(controlName), isFormBusy);
+      });
+    });
+  }
+
+  private setControlDisabled(controlName: string, disabled: boolean): void {
+    this.setAbstractControlDisabled(this.form.get(controlName), disabled);
+  }
+
+  private setAbstractControlDisabled(control: AbstractControl | null, disabled: boolean): void {
+    if (!control || control.disabled === disabled) {
+      return;
+    }
+
+    if (disabled) {
+      control.disable({ emitEvent: false });
+      return;
+    }
+
+    control.enable({ emitEvent: false });
+  }
+
   private startAiDraftTyping(note: string): void {
     this.stopAiDraftTyping();
     this.aiDraftNotes = '';
@@ -803,29 +866,6 @@ export class TestResultFormComponent implements OnInit, OnDestroy {
 
       return null;
     };
-  }
-
-  private getApiErrorMessage(error: unknown, fallbackMessage: string): string {
-    const apiError = error as {
-      error?: {
-        message?: string;
-        title?: string;
-        errors?: Record<string, string[]>;
-      };
-      message?: string;
-    };
-
-    const validationMessages = apiError.error?.errors
-      ? Object.values(apiError.error.errors).flat().filter(Boolean)
-      : [];
-
-    return (
-      apiError.error?.message ??
-      validationMessages[0] ??
-      apiError.error?.title ??
-      apiError.message ??
-      fallbackMessage
-    );
   }
 
   private getDefaultLocalDateTime(): string {

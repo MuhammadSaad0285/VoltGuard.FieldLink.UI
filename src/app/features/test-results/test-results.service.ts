@@ -66,23 +66,23 @@ export class TestResultsService {
     }
 
     if (riskLevel) {
-      httpParams = httpParams
-        .set('riskLevel', riskLevel)
-        .set('assetRiskLevel', riskLevel);
+      httpParams = httpParams.set('riskLevel', riskLevel);
     }
 
     if (dateFrom) {
       httpParams = httpParams
         .set('dateFrom', dateFrom)
         .set('testDateFrom', dateFrom)
-        .set('fromUtc', dateFrom);
+        .set('fromUtc', dateFrom)
+        .set('fromDateUtc', dateFrom);
     }
 
     if (dateTo) {
       httpParams = httpParams
         .set('dateTo', dateTo)
         .set('testDateTo', dateTo)
-        .set('toUtc', dateTo);
+        .set('toUtc', dateTo)
+        .set('toDateUtc', dateTo);
     }
 
     return this.http

@@ -71,7 +71,7 @@ export class AssetTestHistoryComponent {
   }
 
   getRiskLevel(test: AssetTestHistoryItem): string {
-    return this.readValue(test, 'riskLevel', 'assetRiskLevel', 'calculatedRiskLevel') || 'Unknown';
+    return this.readValue(test, 'riskLevel', 'calculatedRiskLevel') || 'Unknown';
   }
 
   getStatusClass(value: string | null | undefined): string {

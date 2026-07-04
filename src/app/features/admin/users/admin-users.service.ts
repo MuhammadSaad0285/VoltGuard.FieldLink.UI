@@ -1,8 +1,7 @@
-import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, of } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
-import { SUPPRESS_API_ERROR_LOG } from '../../../core/interceptors/error.interceptor';
 import { PagedResult } from '../../../core/models/paged-result.model';
 import { ApiUrlService } from '../../../core/services/api-url.service';
 import {
@@ -79,18 +78,6 @@ export class AdminUsersService {
 
   resetPassword(id: string, request: AdminUserResetPasswordRequest): Observable<void> {
     return this.http.post<void>(this.apiUrl.url(`/admin/users/${id}/reset-password`), request);
-  }
-
-  getRoles(): Observable<string[]> {
-    const context = new HttpContext().set(SUPPRESS_API_ERROR_LOG, true);
-
-    return this.http.get<string[]>(this.apiUrl.url('/admin/roles'), { context }).pipe(
-      map((roles) => {
-        const allowedRoles = this.filterAllowedRoles(roles);
-        return allowedRoles.length > 0 ? allowedRoles : this.allowedRoles;
-      }),
-      catchError(() => of(this.allowedRoles))
-    );
   }
 
   private normalizePagedResult(

@@ -73,7 +73,7 @@ export class AssetFormComponent implements OnInit {
 
   form = this.fb.group({
     customerId: ['', Validators.required],
-    siteId: ['', Validators.required],
+    siteId: [{ value: '', disabled: true }, Validators.required],
     name: ['', [Validators.required, Validators.maxLength(150)]],
     assetTag: ['', [Validators.required, Validators.maxLength(80)]],
     serialNumber: ['', Validators.maxLength(120)],
@@ -103,10 +103,16 @@ export class AssetFormComponent implements OnInit {
 
   loadCustomers(): void {
     this.customersLoading = true;
+    this.updateLinkedSelectState();
 
     this.assetsService
       .getCustomersForDropdown()
-      .pipe(finalize(() => (this.customersLoading = false)))
+      .pipe(
+        finalize(() => {
+          this.customersLoading = false;
+          this.updateLinkedSelectState();
+        })
+      )
       .subscribe({
         next: (customers) => {
           this.customers = customers;
@@ -121,10 +127,16 @@ export class AssetFormComponent implements OnInit {
   loadSitesForCustomer(customerId: string, preferredSiteId = ''): void {
     this.sitesLoading = true;
     this.sites = [];
+    this.updateLinkedSelectState();
 
     this.assetsService
       .getSitesForDropdown(customerId)
-      .pipe(finalize(() => (this.sitesLoading = false)))
+      .pipe(
+        finalize(() => {
+          this.sitesLoading = false;
+          this.updateLinkedSelectState();
+        })
+      )
       .subscribe({
         next: (sites) => {
           this.sites = sites;
@@ -132,6 +144,8 @@ export class AssetFormComponent implements OnInit {
           if (preferredSiteId) {
             this.form.patchValue({ siteId: preferredSiteId });
           }
+
+          this.updateLinkedSelectState();
         },
         error: () => {
           this.sites = [];
@@ -160,6 +174,7 @@ export class AssetFormComponent implements OnInit {
 
     this.form.patchValue({ siteId: '' });
     this.sites = [];
+    this.updateLinkedSelectState();
 
     if (customerId) {
       this.loadSitesForCustomer(customerId);
@@ -179,13 +194,19 @@ export class AssetFormComponent implements OnInit {
     const request = this.buildRequest();
 
     this.saving = true;
+    this.updateLinkedSelectState();
 
     const saveRequest = this.isEditMode
       ? this.assetsService.updateAsset(this.assetId, request)
       : this.assetsService.createAsset(request);
 
     saveRequest
-      .pipe(finalize(() => (this.saving = false)))
+      .pipe(
+        finalize(() => {
+          this.saving = false;
+          this.updateLinkedSelectState();
+        })
+      )
       .subscribe({
         next: () => {
           this.successMessage = this.isEditMode
@@ -271,7 +292,10 @@ export class AssetFormComponent implements OnInit {
 
     if (customerId) {
       this.loadSitesForCustomer(customerId, siteId);
+      return;
     }
+
+    this.updateLinkedSelectState();
   }
 
   private buildRequest(): AssetRequest {
@@ -288,9 +312,9 @@ export class AssetFormComponent implements OnInit {
       locationDescription: this.cleanOptionalText(value.locationDescription),
       ratedVoltage: this.cleanOptionalNumber(value.ratedVoltage),
       ratedCurrent: this.cleanOptionalNumber(value.ratedCurrent),
-      installedAtUtc: this.toUtcOrNull(value.installedAtUtc),
-      lastTestedAtUtc: this.toUtcOrNull(value.lastTestedAtUtc),
-      nextTestDueAtUtc: this.toUtcOrNull(value.nextTestDueAtUtc),
+      installedAtUtc: this.toUtcNoonOrNull(value.installedAtUtc),
+      lastTestedAtUtc: this.toUtcNoonOrNull(value.lastTestedAtUtc),
+      nextTestDueAtUtc: this.toUtcNoonOrNull(value.nextTestDueAtUtc),
       notes: this.cleanOptionalText(value.notes)
     };
 
@@ -317,12 +341,12 @@ export class AssetFormComponent implements OnInit {
     return Number.isNaN(numericValue) ? null : numericValue;
   }
 
-  private toUtcOrNull(value: string | null | undefined): string | null {
+  private toUtcNoonOrNull(value: string | null | undefined): string | null {
     if (!value) {
       return null;
     }
 
-    const date = new Date(`${value}T00:00:00`);
+    const date = new Date(`${value}T12:00:00.000Z`);
 
     if (Number.isNaN(date.getTime())) {
       return null;
@@ -343,5 +367,23 @@ export class AssetFormComponent implements OnInit {
     }
 
     return date.toISOString().slice(0, 10);
+  }
+
+  private updateLinkedSelectState(): void {
+    const customerControl = this.form.controls.customerId;
+    const siteControl = this.form.controls.siteId;
+    const hasCustomer = !!customerControl.value;
+
+    if (this.customersLoading || this.saving) {
+      customerControl.disable({ emitEvent: false });
+    } else {
+      customerControl.enable({ emitEvent: false });
+    }
+
+    if (!hasCustomer || this.sitesLoading || this.saving) {
+      siteControl.disable({ emitEvent: false });
+    } else {
+      siteControl.enable({ emitEvent: false });
+    }
   }
 }

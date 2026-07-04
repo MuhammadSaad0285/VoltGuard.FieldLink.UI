@@ -69,14 +69,14 @@ export class JobFormComponent implements OnInit {
 
   form = this.fb.group({
     customerId: [''],
-    siteId: [''],
-    assetId: ['', Validators.required],
+    siteId: [{ value: '', disabled: true }],
+    assetId: [{ value: '', disabled: true }, Validators.required],
     testResultId: [''],
     title: ['', [Validators.required, Validators.maxLength(180)]],
     description: ['', Validators.maxLength(1000)],
     jobType: ['FollowUp' as JobType | '', Validators.required],
     priority: ['High' as JobPriority | '', Validators.required],
-    assignedToUserId: [''],
+    assignedToUserId: [{ value: '', disabled: true }],
     scheduledDateUtc: [''],
     dueDateUtc: [''],
     notes: ['', Validators.maxLength(1000)]
@@ -98,10 +98,16 @@ export class JobFormComponent implements OnInit {
 
   loadCustomers(): void {
     this.customersLoading = true;
+    this.updateSelectState();
 
     this.jobsService
       .getCustomersForDropdown()
-      .pipe(finalize(() => (this.customersLoading = false)))
+      .pipe(
+        finalize(() => {
+          this.customersLoading = false;
+          this.updateSelectState();
+        })
+      )
       .subscribe({
         next: (customers) => {
           this.customers = customers;
@@ -115,10 +121,16 @@ export class JobFormComponent implements OnInit {
   loadSitesForCustomer(customerId: string, preferredSiteId = ''): void {
     this.sitesLoading = true;
     this.sites = [];
+    this.updateSelectState();
 
     this.jobsService
       .getSitesForDropdown(customerId)
-      .pipe(finalize(() => (this.sitesLoading = false)))
+      .pipe(
+        finalize(() => {
+          this.sitesLoading = false;
+          this.updateSelectState();
+        })
+      )
       .subscribe({
         next: (sites) => {
           this.sites = sites;
@@ -126,6 +138,8 @@ export class JobFormComponent implements OnInit {
           if (preferredSiteId) {
             this.form.patchValue({ siteId: preferredSiteId });
           }
+
+          this.updateSelectState();
         },
         error: () => {
           this.sites = [];
@@ -135,10 +149,16 @@ export class JobFormComponent implements OnInit {
 
   loadAssets(customerId?: string, siteId?: string, preferredAssetId = ''): void {
     this.assetsLoading = true;
+    this.updateSelectState();
 
     this.jobsService
       .getAssetsForDropdown(customerId, siteId)
-      .pipe(finalize(() => (this.assetsLoading = false)))
+      .pipe(
+        finalize(() => {
+          this.assetsLoading = false;
+          this.updateSelectState();
+        })
+      )
       .subscribe({
         next: (assets) => {
           this.assets = assets;
@@ -146,6 +166,8 @@ export class JobFormComponent implements OnInit {
           if (preferredAssetId) {
             this.form.patchValue({ assetId: preferredAssetId });
           }
+
+          this.updateSelectState();
         },
         error: () => {
           this.assets = [];
@@ -155,10 +177,16 @@ export class JobFormComponent implements OnInit {
 
   loadEngineers(): void {
     this.engineersLoading = true;
+    this.updateSelectState();
 
     this.jobsService
       .getEngineersForDropdown()
-      .pipe(finalize(() => (this.engineersLoading = false)))
+      .pipe(
+        finalize(() => {
+          this.engineersLoading = false;
+          this.updateSelectState();
+        })
+      )
       .subscribe({
         next: (engineers) => {
           this.engineers = engineers;
@@ -192,6 +220,7 @@ export class JobFormComponent implements OnInit {
       assetId: ''
     });
     this.sites = [];
+    this.updateSelectState();
 
     if (customerId) {
       this.loadSitesForCustomer(customerId);
@@ -205,6 +234,7 @@ export class JobFormComponent implements OnInit {
     const siteId = this.form.controls.siteId.value ?? '';
 
     this.form.patchValue({ assetId: '' });
+    this.updateSelectState();
     this.loadAssets(customerId, siteId);
   }
 
@@ -226,13 +256,19 @@ export class JobFormComponent implements OnInit {
     const request = this.buildRequest();
 
     this.saving = true;
+    this.updateSelectState();
 
     const saveRequest = this.isEditMode
       ? this.jobsService.updateJob(this.jobId, request)
       : this.jobsService.createJob(request);
 
     saveRequest
-      .pipe(finalize(() => (this.saving = false)))
+      .pipe(
+        finalize(() => {
+          this.saving = false;
+          this.updateSelectState();
+        })
+      )
       .subscribe({
         next: () => {
           this.successMessage = this.isEditMode ? 'Job updated successfully.' : 'Job created successfully.';
@@ -341,7 +377,10 @@ export class JobFormComponent implements OnInit {
 
     if (this.isLocked) {
       this.form.disable();
+      return;
     }
+
+    this.updateSelectState();
   }
 
   private buildRequest(): JobRequest {
@@ -423,5 +462,42 @@ export class JobFormComponent implements OnInit {
     }
 
     return date.toISOString().slice(0, 10);
+  }
+
+  private updateSelectState(): void {
+    if (this.isLocked) {
+      this.form.disable({ emitEvent: false });
+      return;
+    }
+
+    const customerControl = this.form.controls.customerId;
+    const siteControl = this.form.controls.siteId;
+    const assetControl = this.form.controls.assetId;
+    const assignedToControl = this.form.controls.assignedToUserId;
+    const hasCustomer = !!customerControl.value;
+
+    if (this.customersLoading || this.saving) {
+      customerControl.disable({ emitEvent: false });
+    } else {
+      customerControl.enable({ emitEvent: false });
+    }
+
+    if (!hasCustomer || this.sitesLoading || this.saving) {
+      siteControl.disable({ emitEvent: false });
+    } else {
+      siteControl.enable({ emitEvent: false });
+    }
+
+    if (this.assetsLoading || this.saving) {
+      assetControl.disable({ emitEvent: false });
+    } else {
+      assetControl.enable({ emitEvent: false });
+    }
+
+    if (this.engineersLoading || this.saving) {
+      assignedToControl.disable({ emitEvent: false });
+    } else {
+      assignedToControl.enable({ emitEvent: false });
+    }
   }
 }

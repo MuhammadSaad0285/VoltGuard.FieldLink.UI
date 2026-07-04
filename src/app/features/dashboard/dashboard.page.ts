@@ -268,7 +268,7 @@ export class DashboardPage implements OnInit {
   }
 
   getRiskLevel(item: RecentFailedTest | AssetDueForRetest): string {
-    const value = item.riskLevel ?? item.assetRiskLevel ?? 'Not evaluated';
+    const value = item.riskLevel ?? 'Not evaluated';
     return value.toLowerCase() === 'unknown' ? 'Not evaluated' : value;
   }
 

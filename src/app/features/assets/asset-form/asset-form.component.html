@@ -32,8 +32,7 @@
           <span>Customer <strong>*</strong></span>
           <select
             formControlName="customerId"
-            (change)="onCustomerChange()"
-            [disabled]="customersLoading || saving">
+            (change)="onCustomerChange()">
             <option value="">Select customer</option>
             <option
               *ngFor="let customer of customers"
@@ -47,8 +46,7 @@
         <label class="form-field">
           <span>Site <strong>*</strong></span>
           <select
-            formControlName="siteId"
-            [disabled]="!form.controls.customerId.value || sitesLoading || saving">
+            formControlName="siteId">
             <option value="">
               {{ form.controls.customerId.value ? 'Select site' : 'Select customer first' }}
             </option>

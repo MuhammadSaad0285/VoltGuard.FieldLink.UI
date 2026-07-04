@@ -216,7 +216,7 @@ export class AuditTrailComponent implements OnInit {
     this.pageNumber = result.pageNumber ?? this.pageNumber;
     this.pageSize = result.pageSize ?? this.pageSize;
     this.totalCount = result.totalCount ?? this.auditLogs.length;
-    this.totalPages = Math.max(1, result.totalPages ?? 1);
+    this.totalPages = result.totalPages ?? this.totalPages;
     this.hasPreviousPage = result.hasPreviousPage ?? this.pageNumber > 1;
     this.hasNextPage = result.hasNextPage ?? this.pageNumber < this.totalPages;
   }
@@ -306,7 +306,10 @@ export class AuditTrailComponent implements OnInit {
       return null;
     }
 
-    const date = new Date(value);
+    const normalizedValue = /(?:z|[+-]\d{2}:\d{2})$/i.test(value)
+      ? value
+      : `${value}Z`;
+    const date = new Date(normalizedValue);
 
     return Number.isNaN(date.getTime()) ? null : date;
   }

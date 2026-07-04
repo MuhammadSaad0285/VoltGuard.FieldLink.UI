@@ -39,10 +39,7 @@
   nextTestDueDateUtc?: string | null;
   nextRetestDueUtc?: string | null;
 
-  currentRiskLevel?: string;
   riskLevel?: string;
-  assetRiskLevel?: string;
-  latestRiskLevel?: string;
 
   isActive?: boolean;
   createdAtUtc?: string;
@@ -135,9 +132,7 @@ export interface AssetTestHistoryItem {
   overallStatus?: string;
 
   riskLevel?: string;
-  assetRiskLevel?: string;
   calculatedRiskLevel?: string;
-  currentRiskLevel?: string;
 
   engineerName?: string;
   engineerEmail?: string;

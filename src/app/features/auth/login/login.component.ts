@@ -3,6 +3,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
+import { getApiErrorMessage } from '../../../core/models/api-error.model';
 
 @Component({
   selector: 'app-login',
@@ -62,7 +63,7 @@ export class LoginComponent implements OnInit {
       },
       error: error => {
         this.loading = false;
-        this.errorMessage = this.getErrorMessage(error);
+        this.errorMessage = getApiErrorMessage(error, 'Login failed. Please check your email and password.');
       }
     });
   }
@@ -77,20 +78,4 @@ export class LoginComponent implements OnInit {
     return returnUrl;
   }
 
-  private getErrorMessage(error: unknown): string {
-    const apiError = error as {
-      error?: {
-        message?: string;
-        title?: string;
-      };
-      message?: string;
-    };
-
-    return (
-      apiError.error?.message ??
-      apiError.error?.title ??
-      apiError.message ??
-      'Login failed. Please check your email and password.'
-    );
-  }
 }

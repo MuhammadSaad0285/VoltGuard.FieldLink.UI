@@ -56,7 +56,7 @@
 
         <label class="form-field form-field--wide">
           <span>Asset <em>*</em></span>
-          <select formControlName="assetId" [disabled]="saving || loadingAssets || loadingDetails">
+          <select formControlName="assetId">
             <option value="">{{ loadingAssets ? 'Loading assets...' : 'Select asset' }}</option>
             <option *ngFor="let asset of assets; trackBy: trackByAsset" [value]="asset.id">
               {{ getAssetLabel(asset) }}
@@ -93,12 +93,12 @@
       <div class="details-grid">
         <label class="form-field">
           <span>Test reference</span>
-          <input type="text" formControlName="testReference" placeholder="Example: TR-2026-0007" [disabled]="saving || loadingDetails" />
+          <input type="text" formControlName="testReference" placeholder="Example: TR-2026-0007" />
         </label>
 
         <label class="form-field">
           <span>Test type <em>*</em></span>
-          <select formControlName="testType" [disabled]="saving || loadingDetails">
+          <select formControlName="testType">
             <option value="">Select test type</option>
             <option *ngFor="let testType of getTestTypeOptions(); trackBy: trackByOption" [value]="testType">
               {{ testType }}
@@ -111,7 +111,7 @@
 
         <label class="form-field">
           <span>Test date/time <em>*</em></span>
-          <input type="datetime-local" formControlName="testDateUtc" [disabled]="saving || loadingDetails" />
+          <input type="datetime-local" formControlName="testDateUtc" />
           <small class="field-error" *ngIf="isControlInvalid('testDateUtc')">
             Test date/time is required.
           </small>
@@ -119,7 +119,7 @@
 
         <label class="form-field">
           <span>Engineer name <em>*</em></span>
-          <select formControlName="engineerName" [disabled]="saving || loadingDetails || loadingEngineers">
+          <select formControlName="engineerName">
             <option value="">{{ loadingEngineers ? 'Loading engineers...' : 'Select engineer' }}</option>
             <option *ngFor="let engineerName of getEngineerNameOptions(); trackBy: trackByOption" [value]="engineerName">
               {{ getEngineerDropdownLabel(engineerName) }}
@@ -132,7 +132,7 @@
 
         <label class="form-field form-field--full">
           <span>Notes</span>
-          <textarea rows="3" formControlName="notes" placeholder="Optional notes for this test result" [disabled]="saving || loadingDetails"></textarea>
+          <textarea rows="3" formControlName="notes" placeholder="Optional notes for this test result"></textarea>
         </label>
 
         <div class="ai-draft-panel" *ngIf="aiDraftOpen">
@@ -245,8 +245,7 @@
                   autocomplete="off"
                   [attr.data-measurement-index]="i"
                   data-measurement-control="measurementName"
-                  placeholder="Insulation Resistance"
-                  [disabled]="saving || loadingDetails" />
+                  placeholder="Insulation Resistance" />
                 <small class="field-error" *ngIf="isMeasurementControlInvalid(i, 'measurementName')">
                   Required
                 </small>
@@ -261,8 +260,7 @@
                   autocomplete="off"
                   [attr.data-measurement-index]="i"
                   data-measurement-control="value"
-                  placeholder="Reading"
-                  [disabled]="saving || loadingDetails" />
+                  placeholder="Reading" />
                 <small class="field-error" *ngIf="getMeasurementValueError(i) as valueError">
                   {{ valueError }}
                 </small>
@@ -277,8 +275,7 @@
                   autocomplete="off"
                   [attr.data-measurement-index]="i"
                   data-measurement-control="unit"
-                  placeholder="MΩ"
-                  [disabled]="saving || loadingDetails" />
+                  placeholder="MΩ" />
                 <small class="field-error" *ngIf="isMeasurementControlInvalid(i, 'unit')">
                   Required
                 </small>
@@ -294,8 +291,7 @@
                   [attr.data-measurement-index]="i"
                   data-measurement-control="expectedMin"
                   placeholder="Optional"
-                  [class.invalid]="hasMeasurementThresholdError(i) || getMeasurementThresholdControlError(i, 'expectedMin')"
-                  [disabled]="saving || loadingDetails" />
+                  [class.invalid]="hasMeasurementThresholdError(i) || getMeasurementThresholdControlError(i, 'expectedMin')" />
                 <small class="field-error" *ngIf="getMeasurementThresholdControlError(i, 'expectedMin') as thresholdError">
                   {{ thresholdError }}
                 </small>
@@ -311,8 +307,7 @@
                   [attr.data-measurement-index]="i"
                   data-measurement-control="expectedMax"
                   placeholder="Optional"
-                  [class.invalid]="hasMeasurementThresholdError(i) || getMeasurementThresholdControlError(i, 'expectedMax')"
-                  [disabled]="saving || loadingDetails" />
+                  [class.invalid]="hasMeasurementThresholdError(i) || getMeasurementThresholdControlError(i, 'expectedMax')" />
                 <small class="field-error" *ngIf="getMeasurementThresholdControlError(i, 'expectedMax') as thresholdError">
                   {{ thresholdError }}
                 </small>
@@ -329,8 +324,7 @@
                   autocomplete="off"
                   [attr.data-measurement-index]="i"
                   data-measurement-control="notes"
-                  placeholder="Optional"
-                  [disabled]="saving || loadingDetails" />
+                  placeholder="Optional" />
               </td>
 
               <td class="actions-column">

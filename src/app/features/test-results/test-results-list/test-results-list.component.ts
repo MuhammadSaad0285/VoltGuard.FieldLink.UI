@@ -401,7 +401,7 @@ export class TestResultsListComponent implements OnInit {
   }
 
   getRiskLevel(result: TestResultListItem): string {
-    return result.riskLevel ?? result.assetRiskLevel ?? result.calculatedRiskLevel ?? 'Unknown';
+    return result.riskLevel ?? result.calculatedRiskLevel ?? 'Unknown';
   }
 
   getMeasurementCount(result: TestResultListItem): number {
@@ -500,7 +500,7 @@ export class TestResultsListComponent implements OnInit {
     this.pageNumber = result.pageNumber ?? this.pageNumber;
     this.pageSize = result.pageSize ?? this.pageSize;
     this.totalCount = result.totalCount ?? this.testResults.length;
-    this.totalPages = Math.max(1, result.totalPages ?? 1);
+    this.totalPages = result.totalPages ?? this.totalPages;
     this.hasPreviousPage = result.hasPreviousPage ?? this.pageNumber > 1;
     this.hasNextPage = result.hasNextPage ?? this.pageNumber < this.totalPages;
   }
